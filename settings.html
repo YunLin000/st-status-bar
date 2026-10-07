@@ -1,0 +1,114 @@
+<!-- 状态栏扩展 v1.0.0 设置面板（PiuPiu式折叠状态栏） -->
+<div class="inline-drawer">
+    <div class="inline-drawer-toggle inline-drawer-header">
+        <b>📊 状态栏扩展</b>
+        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+    </div>
+    <div class="inline-drawer-content">
+        <!-- 总开关（卡片装 toggle） -->
+        <div class="sb-entry-card">
+            <div class="sb-switch-row">
+                <b><i class="fa-solid fa-power-off"></i> 启用状态栏</b>
+                <label class="sb-switch" for="sb_enabled">
+                    <input type="checkbox" id="sb_enabled" class="checkbox">
+                    <span class="sb-switch-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 设置主体（启用后亮起） -->
+        <div id="sb_settings_body" style="margin-top:8px;">
+
+            <!-- 主题定制区 -->
+            <div class="sb-panel-card">
+                <div class="sb-card-head">
+                    <i class="fa-solid fa-palette"></i>
+                    <b>主题定制</b>
+                    <div class="sb-card-chev fa-solid fa-chevron-down"></div>
+                </div>
+                <div class="sb-card-body">
+                    <div class="sb-field-label">主色（边框 / 文字 / 分隔线统一派生）</div>
+                    <div class="sb-swatches">
+                        <div class="sb-swatch" data-hex="#ff6b9d" style="background:#ff6b9d" title="默认粉 #ff6b9d"></div>
+                        <div class="sb-swatch" data-hex="#3a4a5c" style="background:#3a4a5c" title="青黛"></div>
+                        <div class="sb-swatch" data-hex="#5c7a6a" style="background:#5c7a6a" title="竹青"></div>
+                        <div class="sb-swatch" data-hex="#b8860b" style="background:#b8860b" title="鎏金"></div>
+                        <div class="sb-swatch" data-hex="#b47a9e" style="background:#b47a9e" title="藕荷"></div>
+                        <div class="sb-swatch" data-hex="#a0392c" style="background:#a0392c" title="朱砂"></div>
+                        <div class="sb-swatch" data-hex="#4a90d9" style="background:#4a90d9" title="天青"></div>
+                    </div>
+                    <div class="sb-custom-row">
+                        <input type="color" id="sb_color_custom" value="#ff6b9d">
+                        <span>自定义</span>
+                        <code id="sb_hex_label">#ff6b9d</code>
+                    </div>
+                    <div class="sb-field-label" style="margin-top:10px;">边框样式</div>
+                    <div class="sb-style-row">
+                        <button type="button" class="sb-style-btn" data-style="solid">实线</button>
+                        <button type="button" class="sb-style-btn" data-style="dashed">虚线</button>
+                        <button type="button" class="sb-style-btn" data-style="dotted">点线</button>
+                    </div>
+                    <div class="sb-range-row">
+                        <label>粗细</label>
+                        <input type="range" id="sb_border_width" min="1" max="4" step="1" value="1">
+                        <span class="sb-val" id="sb_border_width_val">1px</span>
+                    </div>
+                    <div class="sb-range-row">
+                        <label>圆角</label>
+                        <input type="range" id="sb_border_radius" min="4" max="24" step="1" value="12">
+                        <span class="sb-val" id="sb_border_radius_val">12px</span>
+                    </div>
+                    <button type="button" class="menu_button sb-theme-reset" id="sb_theme_reset" style="width:100%;margin-top:4px;">
+                        <i class="fa-solid fa-rotate-left"></i> 恢复默认（粉 · 实线 · 1px · 12px）
+                    </button>
+                </div>
+            </div>
+
+            <!-- 角色状态栏模板 -->
+            <div class="sb-panel-card">
+                <div class="sb-card-head">
+                    <i class="fa-solid fa-user-group"></i>
+                    <b>角色状态栏</b>
+                    <div class="sb-card-chev fa-solid fa-chevron-down"></div>
+                </div>
+                <div class="sb-card-body">
+                    <div class="sb-field-label">折叠栏标题模板（<code>{{name}}</code>=名字 <code>{{age}}</code>=年龄）</div>
+                    <input type="text" id="sb_char_title" class="sb-text-input" value="{{name}} · {{age}}" placeholder="{{name}} · {{age}}">
+                    <div class="sb-field-label" style="margin-top:10px;">状态条目（可增删 / 排序 / 写规则）</div>
+                    <div id="sb_items_character" class="sb-items-box"></div>
+                    <button type="button" class="menu_button sb-item-add" data-side="character" style="width:100%;margin-top:6px;">
+                        <i class="fa-solid fa-plus"></i> 添加条目
+                    </button>
+                </div>
+            </div>
+
+            <!-- 用户状态栏模板 -->
+            <div class="sb-panel-card">
+                <div class="sb-card-head">
+                    <i class="fa-solid fa-user"></i>
+                    <b>用户状态栏（我扮演的角色）</b>
+                    <div class="sb-card-chev fa-solid fa-chevron-down"></div>
+                </div>
+                <div class="sb-card-body">
+                    <div class="sb-field-label">折叠栏标题模板</div>
+                    <input type="text" id="sb_user_title" class="sb-text-input" value="{{name}} · {{age}}" placeholder="{{name}} · {{age}}">
+                    <div class="sb-field-label" style="margin-top:10px;">状态条目</div>
+                    <div id="sb_items_user" class="sb-items-box"></div>
+                    <button type="button" class="menu_button sb-item-add" data-side="user" style="width:100%;margin-top:6px;">
+                        <i class="fa-solid fa-plus"></i> 添加条目
+                    </button>
+                </div>
+            </div>
+
+            <!-- 说明 -->
+            <div class="sb-tip">
+                <i class="fa-solid fa-lightbulb"></i>
+                <div>
+                    <b>工作原理：</b>启用后，AI 每次回复会在末尾自动生成可折叠状态栏（&lt;details&gt; 原生折叠），每个在场角色一个、用户角色一个。状态栏内容是「隐形的 UI 元素」，不影响正文叙事。
+                    <br><b>位置：</b>正文结束后、生图图片前。流式生成时内容默认隐藏（折叠态），点开才看到。
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

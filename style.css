@@ -1,0 +1,144 @@
+/* ============================================================
+   st-status-bar · 状态栏扩展 UI 样式（sb- 前缀，跟随酒馆主题变量）
+   ============================================================ */
+
+/* --- toggle 开关 --- */
+.sb-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+.sb-switch input { display: none; }
+.sb-switch .sb-switch-slider {
+    position: absolute; inset: 0;
+    background: var(--SmartThemeBorderColor, #555);
+    border-radius: 22px; cursor: pointer; transition: .12s;
+}
+.sb-switch .sb-switch-slider::after {
+    content: ""; position: absolute; width: 16px; height: 16px;
+    left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .12s;
+}
+.sb-switch input:checked + .sb-switch-slider { background: var(--SmartThemeQuoteColor, #2a5); }
+.sb-switch input:checked + .sb-switch-slider::after { transform: translateX(18px); }
+.sb-switch input:disabled + .sb-switch-slider { opacity: .45; }
+
+.sb-switch-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 2px 0;
+}
+.sb-switch-row b { font-size: 15px; }
+
+/* --- 入口卡片 --- */
+.sb-entry-card {
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 8px; padding: 9px 12px;
+    background: color-mix(in srgb, var(--SmartThemeBlurTintColor, #444) 40%, transparent);
+}
+
+/* --- 面板卡片（可折叠） --- */
+.sb-panel-card {
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 8px; margin-top: 6px; overflow: hidden;
+    background: color-mix(in srgb, var(--SmartThemeBlurTintColor, #444) 30%, transparent);
+}
+.sb-card-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; cursor: pointer; user-select: none;
+    font-size: 14px;
+}
+.sb-card-head:hover { filter: brightness(1.1); }
+.sb-card-head i { color: var(--st-sb-light, #ff9ec4); }
+.sb-card-chev { margin-left: auto; transition: transform .2s; opacity: .6; font-size: 12px; }
+.sb-panel-card.sb-collapsed .sb-card-chev { transform: rotate(-90deg); }
+.sb-panel-card .sb-card-body { padding: 12px 14px; }
+.sb-panel-card.sb-collapsed .sb-card-body { display: none; }
+
+/* --- 表单控件 --- */
+.sb-field-label {
+    font-size: 12px; color: var(--SmartThemeBodyColor, #ccc);
+    opacity: .7; margin-bottom: 6px; line-height: 1.5;
+}
+.sb-field-label code { color: var(--st-sb-light, #ff9ec4); }
+
+.sb-text-input {
+    width: 100%; padding: 7px 10px;
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 6px; background: var(--SmartThemeBlurTintColor, #333);
+    color: var(--SmartThemeBodyColor, #ccc); font-size: 13px;
+}
+.sb-text-input:focus { outline: none; border-color: var(--st-sb-light, #ff9ec4); }
+
+/* --- 色板 --- */
+.sb-swatches { display: flex; gap: 9px; flex-wrap: wrap; }
+.sb-swatch {
+    width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+    border: 2px solid rgba(128,128,128,.3); transition: transform .15s;
+}
+.sb-swatch:hover { transform: scale(1.18); }
+.sb-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px #000; transform: scale(1.1); }
+
+.sb-custom-row { display: flex; align-items: center; gap: 9px; margin-top: 10px; }
+.sb-custom-row input[type="color"] {
+    width: 34px; height: 27px; border: none; background: none; cursor: pointer; padding: 0;
+}
+.sb-custom-row span { font-size: 12px; opacity: .7; }
+.sb-custom-row code { font-size: 12px; color: var(--st-sb-light, #ff9ec4); }
+
+/* --- 边框样式按钮 --- */
+.sb-style-row { display: flex; gap: 6px; }
+.sb-style-btn {
+    flex: 1; padding: 6px 0;
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    background: transparent; color: var(--SmartThemeBodyColor, #ccc);
+    border-radius: 6px; font-size: 12px; cursor: pointer; transition: all .15s;
+}
+.sb-style-btn:hover { filter: brightness(1.15); }
+.sb-style-btn.active {
+    background: color-mix(in srgb, var(--st-sb-light, #ff9ec4) 25%, transparent);
+    color: #fff; border-color: var(--st-sb-light, #ff9ec4);
+}
+
+/* --- 滑条 --- */
+.sb-range-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.sb-range-row label { font-size: 12px; width: 40px; flex-shrink: 0; opacity: .8; }
+.sb-range-row input[type="range"] { flex: 1; accent-color: var(--st-sb-light, #ff9ec4); }
+.sb-range-row .sb-val { font-size: 12px; width: 34px; text-align: right; opacity: .9; }
+
+/* --- 条目管理 --- */
+.sb-items-box { display: flex; flex-direction: column; gap: 8px; }
+.sb-item-row {
+    border: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor, #555) 45%, transparent);
+    border-radius: 8px; padding: 8px 10px;
+    background: color-mix(in srgb, var(--SmartThemeBlurTintColor, #444) 25%, transparent);
+}
+.sb-item-main { display: flex; gap: 10px; align-items: stretch; }
+.sb-item-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.sb-item-label {
+    padding: 5px 8px; border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 5px; background: var(--SmartThemeBlurTintColor, #333);
+    color: var(--SmartThemeBodyColor, #ccc); font-size: 13px; font-weight: 600;
+}
+.sb-item-label:focus { outline: none; border-color: var(--st-sb-light, #ff9ec4); }
+.sb-item-rule {
+    min-height: 44px; resize: vertical; padding: 5px 8px;
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 5px; background: var(--SmartThemeBlurTintColor, #333);
+    color: var(--SmartThemeBodyColor, #ccc); font-size: 12px; line-height: 1.5;
+}
+.sb-item-rule:focus { outline: none; border-color: var(--st-sb-light, #ff9ec4); }
+.sb-item-ops { display: flex; flex-direction: column; gap: 4px; justify-content: center; flex-shrink: 0; }
+.sb-item-ops .menu_button { width: 28px; height: 27px; padding: 0; font-size: 11px; }
+.sb-item-ops .sb-item-del { color: var(--SmartThemeExceptionColor, #c96); }
+.sb-empty {
+    padding: 14px; text-align: center; font-size: 12px; opacity: .5;
+    border: 1px dashed var(--SmartThemeBorderColor, #555); border-radius: 6px;
+}
+
+/* --- 说明提示 --- */
+.sb-tip {
+    margin-top: 8px; padding: 10px 12px;
+    border: 1px dashed var(--SmartThemeBorderColor, #555); border-radius: 8px;
+    font-size: 12px; line-height: 1.7; opacity: .75;
+    display: flex; gap: 8px; align-items: flex-start;
+}
+.sb-tip i { color: var(--st-sb-light, #ff9ec4); margin-top: 2px; }
+.sb-tip b { color: var(--st-sb-light, #ff9ec4); }
+
+/* --- 启用灰化 --- */
+#sb_settings_body.sb-disabled { opacity: .45; pointer-events: none; }
