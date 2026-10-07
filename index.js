@@ -1,6 +1,6 @@
 // ============================================================
 // st-status-bar · 状态栏扩展（PiuPiu 式）
-// 让 LLM 在回复末尾生成 <details> 可折叠状态栏，追踪在场角色与用户的实时状态
+// 让 LLM 在回复末尾生成 <details class="st-sb-card"> 可折叠状态栏，追踪在场角色与用户的实时状态
 // 主题/条目全部可在设置面板自定义（默认粉 #ff6b9d 照搬 PiuPiu ChatView 样式）
 // ============================================================
 import { Popup } from '../../../popup.js';
@@ -108,18 +108,14 @@ function injectThemeCSS(s) {
     const light = lighten(t.primary, 20);
     const css = `
 :root{--st-sb-rgb:${rgb};--st-sb-light:${light};}
-#chat .mes .mes_text details{margin:10px 0;background:rgba(255,255,255,.4);border:${t.borderWidth}px ${t.borderStyle} rgba(${rgb},.2);border-radius:${t.borderRadius}px;overflow:hidden;transition:all .3s ease;}
-#chat .mes .mes_text details[open]{background:rgba(255,255,255,.6);box-shadow:0 4px 12px rgba(${rgb},.15);}
-#chat .mes .mes_text summary{padding:8px 12px;cursor:pointer;font-size:.9em;font-weight:600;color:${light};user-select:none;display:flex;align-items:center;gap:6px;transition:background .2s;list-style:none;}
-#chat .mes .mes_text summary::-webkit-details-marker,#chat .mes .mes_text summary::marker{display:none;content:"";}
-#chat .mes .mes_text summary:after{content:"▼";font-size:.8em;margin-left:auto;transition:transform .3s cubic-bezier(.4,0,.2,1);opacity:.6;}
-#chat .mes .mes_text details[open] summary:after{transform:rotate(180deg);}
-#chat .mes .mes_text .details-content{padding:10px 12px 12px;border-top:1px dashed rgba(${rgb},.2);font-size:.85em;line-height:1.6;color:rgba(0,0,0,.7);white-space:pre-wrap;display:flex;flex-direction:column;gap:4px;}
-@media (prefers-color-scheme:dark){
-#chat .mes .mes_text details{background:rgba(0,0,0,.2);border-color:rgba(${rgb},.3);}
-#chat .mes .mes_text details[open]{background:rgba(0,0,0,.3);}
-#chat .mes .mes_text .details-content{color:rgba(255,255,255,.8);border-top-color:rgba(${rgb},.3);}
-}`;
+#chat .mes .mes_text details.st-sb-card{margin:10px 0;background:rgba(128,128,128,.06);background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 10%,transparent);border:${t.borderWidth}px ${t.borderStyle} rgba(${rgb},.22);border-radius:${t.borderRadius}px;overflow:hidden;transition:border-color .3s ease;}
+#chat .mes .mes_text details.st-sb-card[open]{background:rgba(128,128,128,.1);background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 16%,transparent);box-shadow:0 2px 10px rgba(${rgb},.12);}
+#chat .mes .mes_text details.st-sb-card summary{padding:8px 12px;cursor:pointer;font-size:.9em;font-weight:600;color:${light};user-select:none;display:flex;align-items:center;gap:6px;transition:background .2s;list-style:none;}
+#chat .mes .mes_text details.st-sb-card summary::-webkit-details-marker,#chat .mes .mes_text details.st-sb-card summary::marker{display:none;content:"";}
+#chat .mes .mes_text details.st-sb-card summary:after{content:"▼";font-size:.8em;margin-left:auto;transition:transform .3s cubic-bezier(.4,0,.2,1);opacity:.6;}
+#chat .mes .mes_text details.st-sb-card[open] summary:after{transform:rotate(180deg);}
+#chat .mes .mes_text details.st-sb-card .details-content{padding:10px 12px 12px;border-top:1px dashed rgba(${rgb},.2);font-size:.85em;line-height:1.8;color:var(--SmartThemeBodyColor,#333);word-break:break-word;}
+`;
     let el = document.getElementById('st-status-bar-theme');
     if (!el) {
         el = document.createElement('style');
@@ -133,10 +129,10 @@ function injectThemeCSS(s) {
 function buildProtocol(s) {
     const c = s.character;
     const u = s.user;
-    const charTpl = c.items.map(i => `${i.label}: [${i.label}]`).join('\n');
-    const charRules = c.items.map(i => `- ${i.label}：${i.rule}`).join('\n');
-    const userTpl = u.items.map(i => `${i.label}: [${i.label}]`).join('\n');
-    const userRules = u.items.map(i => `- ${i.label}：${i.rule}`).join('\n');
+    const charTpl = c.items.map(i => `${i.label}: [${i.label}]`).join('<br>');
+    const charRules = c.items.map(i => `- ${i.label}：${i.rule}`).join('<br>');
+    const userTpl = u.items.map(i => `${i.label}: [${i.label}]`).join('<br>');
+    const userRules = u.items.map(i => `- ${i.label}：${i.rule}`).join('<br>');
 
     return `<StatusUpdateProtocol name="DynamicCharacterStatusEngine">
     <Purpose>
@@ -166,27 +162,27 @@ function buildProtocol(s) {
     - 生成【一个】状态栏。
     【多角色场景】：
     - 为【每个在场角色】分别生成【独立的】状态栏。
-    - 每个状态栏使用独立的 <details> 标签包裹。
+    - 每个状态栏使用独立的 <details class="st-sb-card"> 标签包裹。
     - <summary> 标签内的标题必须是【该角色的实际名字】，而非角色卡名称。
     - 每个角色的状态项仍参考状态项模板，但标题用角色名替换。
     </MultiCharacterRules>
     <HTMLFormat>
     严格遵循以下HTML格式，确保前端能正确渲染：
     【单角色标准格式】：
-    <details>
+    <details class="st-sb-card">
     <summary>${c.titleTemplate}</summary>
     <div class="details-content">
     ${charTpl}
     </div>
     </details>
     【多角色格式示例】：
-    <details>
+    <details class="st-sb-card">
     <summary>😊 角色A实际名字</summary>
     <div class="details-content">
     [参考状态项模板填充角色A的状态]
     </div>
     </details>
-    <details>
+    <details class="st-sb-card">
     <summary>🌙 角色B实际名字</summary>
     <div class="details-content">
     [参考状态项模板填充角色B的状态]
@@ -220,7 +216,7 @@ function buildProtocol(s) {
     3. 状态栏只能整理用户已经提供的信息，不能替用户补充或推进任何状态。
     </Rules>
     <HTMLFormat>
-    <details>
+    <details class="st-sb-card">
     <summary>${u.titleTemplate}</summary>
     <div class="details-content">
     ${userTpl}

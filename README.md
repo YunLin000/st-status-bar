@@ -58,6 +58,7 @@ YunLin000/st-status-bar
 
 ## 版本
 
+- **v1.0.1** — 修复 ST 内渲染异常：① CSS 选择器限定到 `details.st-sb-card`，不再污染预设其他折叠栏（如平行世界）；② 状态项改用 `<br>` 分隔，解决 showdown 合并换行导致条目堆在一起；③ 背景/文字改用酒馆主题变量（`--SmartThemeBlurTintColor` / `--SmartThemeBodyColor`），深色主题下不再显示错乱
 - **v1.0.0** — 首个版本：在场角色 + 用户状态栏、原生折叠、条目自定义、主题定制
 
 ## 许可
