@@ -84,23 +84,62 @@ function saveSettings() {
     saveSettingsDebounced();
 }
 
-// 宽松 JSON 解析：容错 LLM 常见的尾逗号 / 单引号 / 代码块残留
+// 宽松 JSON 解析：容错 LLM 常见的尾逗号 / 单引号 / 中文引号 / 缺 value 键 / 围栏残留
 function parseLooseJSON(raw) {
     if (!raw) return null;
     let t = String(raw).trim();
-    // 去掉可能的围栏残留
     t = t.replace(/^```[a-zA-Z]*\s*/, '').replace(/```\s*$/, '').trim();
-    // 截取第一个 { 到最后一个 }
     const a = t.indexOf('{'), b = t.lastIndexOf('}');
     if (a === -1 || b === -1 || b <= a) return null;
     t = t.slice(a, b + 1);
+    // 1. 直接 parse
     try { return JSON.parse(t); } catch (e) { /* 继续修复 */ }
+    // 2. 修复常见 LLM 错误
     try {
         const repaired = t
-            .replace(/,\s*([}\]])/g, '$1')          // 去尾逗号
-            .replace(/([{,]\s*)'([^']*?)'(\s*:)/g, '$1"$2"$3')  // 单引号键
-            .replace(/:\s*'([^']*?)'(\s*[,}])/g, ':"$1"$2');    // 单引号值
+            .replace(/[\u201c\u201d]/g, '"')                                   // 中文双引号 “”
+            .replace(/[\u2018\u2019]/g, "'")                                    // 中文单引号 ‘’
+            .replace(/,\s*([}\]])/g, '$1')                                     // 尾逗号
+            .replace(/([{,]\s*)'([^']*?)'(\s*:)/g, '$1"$2"$3')                // 单引号键
+            .replace(/:\s*'([^']*?)'(\s*[,}])/g, ':"$1"$2')                    // 单引号值
+            .replace(/"(\w+)"\s*:\s*"([^"]*)"\s*:\s*"([^"]*)"/g, '"$1":"$2","value":"$3"'); // 缺 value 键: "k":"v1":"v2"
         return JSON.parse(repaired);
+    } catch (e) { /* 继续降级 */ }
+    // 3. 降级：正则逐条提取（JSON 严重损坏时兜底）
+    return fallbackExtract(t);
+}
+
+// 降级提取：先修缺 value 键，再用正则按 "name" 分角色块提取 name/age/stats
+function fallbackExtract(text) {
+    try {
+        const fixed = text.replace(/"(\w+)"\s*:\s*"([^"]*)"\s*:\s*"([^"]*)"/g, '"$1":"$2","value":"$3"');
+        const result = { characters: [], user: null };
+        const statsOf = (block) => [...block.matchAll(/"label"\s*:\s*"([^"]*)"\s*,?\s*"value"\s*:\s*"([^"]*)"/g)]
+            .map(m => ({ label: m[1], value: m[2] }));
+        // user 块
+        const userIdx = fixed.search(/"user"\s*:\s*\{/);
+        let charText = fixed, userText = '';
+        if (userIdx !== -1) {
+            charText = fixed.slice(0, userIdx);
+            userText = fixed.slice(userIdx);
+        }
+        // characters 按 "name" 分块
+        const names = [...charText.matchAll(/"name"\s*:\s*"([^"]+)"/g)];
+        for (let i = 0; i < names.length; i++) {
+            const start = names[i].index;
+            const end = (i + 1 < names.length) ? names[i + 1].index : charText.length;
+            const block = charText.slice(start, end);
+            const ageM = block.match(/"age"\s*:\s*"([^"]*)"/);
+            result.characters.push({ name: names[i][1], age: ageM ? ageM[1] : '', stats: statsOf(block) });
+        }
+        // user
+        if (userText) {
+            const nameM = userText.match(/"name"\s*:\s*"([^"]*)"/);
+            const ageM = userText.match(/"age"\s*:\s*"([^"]*)"/);
+            result.user = { name: nameM ? nameM[1] : '', age: ageM ? ageM[1] : '', stats: statsOf(userText) };
+        }
+        if (!result.characters.length && !result.user) return null;
+        return result;
     } catch (e) {
         return null;
     }

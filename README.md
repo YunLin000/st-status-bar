@@ -59,6 +59,7 @@ YunLin000/st-status-bar
 
 ## 版本
 
+- **v2.0.1** — 加强 JSON 容错：修复缺 value 键（`"label":"X":"Y"` → `"label":"X","value":"Y"`）、中文引号；新增正则降级提取（JSON 严重损坏时按 `"name"` 分块兜底提取 name/age/stats）
 - **v2.0.0** — 架构重构：LLM 不再输出 HTML，改输出 ```statusbar JSON 代码块，插件捕获后自己构建 DOM（彻底绕开酒馆渲染管线，样式 100% 可控）；JSON 容错解析（尾逗号 / 单引号 / 围栏残留）
 - **v1.0.1** — 修复 ST 内渲染异常：① CSS 选择器限定到 `details.st-sb-card`，不再污染预设其他折叠栏（如平行世界）；② 状态项改用 `<br>` 分隔，解决 showdown 合并换行导致条目堆在一起；③ 背景/文字改用酒馆主题变量（`--SmartThemeBlurTintColor` / `--SmartThemeBodyColor`），深色主题下不再显示错乱
 - **v1.0.0** — 首个版本：在场角色 + 用户状态栏、原生折叠、条目自定义、主题定制
