@@ -272,18 +272,30 @@ function buildCard(entity, sideSettings) {
     const d = document.createElement('details');
     d.className = 'st-sb-card';
     const sum = document.createElement('summary');
-    sum.textContent = applyTitle(sideSettings.titleTemplate, entity.name, entity.age);
+    const title = applyTitle(sideSettings.titleTemplate, entity.name, entity.age);
+    sum.textContent = title || '角色状态';
     const content = document.createElement('div');
     content.className = 'details-content';
     const stats = Array.isArray(entity.stats) ? entity.stats : [];
+    const seen = new Set();
     for (const st of stats) {
         if (!st) continue;
+        const label = st.label != null ? String(st.label) : '';
+        if (label) seen.add(label);
         const line = document.createElement('div');
         line.className = 'st-sb-line';
-        const label = st.label != null ? String(st.label) : '';
         const value = st.value != null ? String(st.value) : '未明确';
         line.textContent = label ? `${label}: ${value}` : value;
         content.appendChild(line);
+    }
+    // 补全：设置里的条目缺失时填「未明确」，保证永远渲染完整状态栏
+    for (const item of (sideSettings.items || [])) {
+        if (!seen.has(item.label)) {
+            const line = document.createElement('div');
+            line.className = 'st-sb-line';
+            line.textContent = `${item.label}: 未明确`;
+            content.appendChild(line);
+        }
     }
     d.appendChild(sum);
     d.appendChild(content);
@@ -309,12 +321,20 @@ function renderStatusBarIn(mesText, s) {
     if (mesText.querySelector('.st-sb-wrap')) return; // 已处理过
     const codes = mesText.querySelectorAll(`pre > code.language-${FENCE}, pre > code[class*="language-${FENCE}"]`);
     for (const code of codes) {
-        const data = parseLooseJSON(code.textContent);
+        // 四层容错 + 兜底占位：即使 JSON 完全损坏也渲染出完整状态栏（缺失条目填「未明确」）
+        const data = parseLooseJSON(code.textContent) || salvageParse(code.textContent);
         if (!data) continue;
         const el = buildStatusBarElement(data, s);
         const pre = code.closest('pre') || code;
         pre.replaceWith(el);
     }
+}
+
+// 兜底解析：尽力提取仍失败 → 构造占位状态栏（至少一张卡，标题「角色状态」）
+function salvageParse(text) {
+    const fb = fallbackExtract(text);
+    if (fb && (fb.characters.length || fb.user)) return fb;
+    return { characters: [{ name: '', age: '', stats: [] }], user: null };
 }
 
 function renderAllStatusBars() {
