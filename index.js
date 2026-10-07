@@ -1,11 +1,13 @@
 // ============================================================
 // st-status-bar · 状态栏扩展（PiuPiu 式）
-// 让 LLM 在回复末尾生成 <details class="st-sb-card"> 可折叠状态栏，追踪在场角色与用户的实时状态
+// v2.0.0：LLM 输出 statusbar JSON 代码块 → 插件捕获解析 → 自己构建可折叠状态栏 DOM
+//         （不再让 LLM 输出 HTML，绕开酒馆 markdown/DOMPurify 渲染管线的样式丢失问题）
 // 主题/条目全部可在设置面板自定义（默认粉 #ff6b9d 照搬 PiuPiu ChatView 样式）
 // ============================================================
 import { Popup } from '../../../popup.js';
 
 const MODULE = 'st_status_bar';
+const FENCE = 'statusbar';   // LLM 输出的代码块围栏语言标记
 
 // ---------- 默认设置 ----------
 const DEFAULTS = {
@@ -60,7 +62,6 @@ function lighten(hex, pct) {
     return '#' + [nr, ng, nb].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
-// 深合并默认值（对象递归，数组直接替换）
 function mergeDefaults(target, defaults) {
     for (const k of Object.keys(defaults)) {
         if (!(k in target)) {
@@ -83,21 +84,39 @@ function saveSettings() {
     saveSettingsDebounced();
 }
 
-// TauriTavern 兼容弹窗（原生 prompt/confirm 在安卓 WebView 静默返回 null）
+// 宽松 JSON 解析：容错 LLM 常见的尾逗号 / 单引号 / 代码块残留
+function parseLooseJSON(raw) {
+    if (!raw) return null;
+    let t = String(raw).trim();
+    // 去掉可能的围栏残留
+    t = t.replace(/^```[a-zA-Z]*\s*/, '').replace(/```\s*$/, '').trim();
+    // 截取第一个 { 到最后一个 }
+    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a === -1 || b === -1 || b <= a) return null;
+    t = t.slice(a, b + 1);
+    try { return JSON.parse(t); } catch (e) { /* 继续修复 */ }
+    try {
+        const repaired = t
+            .replace(/,\s*([}\]])/g, '$1')          // 去尾逗号
+            .replace(/([{,]\s*)'([^']*?)'(\s*:)/g, '$1"$2"$3')  // 单引号键
+            .replace(/:\s*'([^']*?)'(\s*[,}])/g, ':"$1"$2');    // 单引号值
+        return JSON.parse(repaired);
+    } catch (e) {
+        return null;
+    }
+}
+
+// TauriTavern 兼容弹窗
 async function sbPrompt(title, label, def) {
     try {
-        if (Popup && Popup.show) {
-            return await Popup.show.input(title, label, def || '');
-        }
-    } catch (e) { /* 回落原生 */ }
+        if (Popup && Popup.show) return await Popup.show.input(title, label, def || '');
+    } catch (e) { /* 回落 */ }
     return window.prompt(title, def || '');
 }
 async function sbConfirm(title, text) {
     try {
-        if (Popup && Popup.show) {
-            return await Popup.show.confirm(title, text);
-        }
-    } catch (e) { /* 回落原生 */ }
+        if (Popup && Popup.show) return await Popup.show.confirm(title, text);
+    } catch (e) { /* 回落 */ }
     return window.confirm(title);
 }
 
@@ -115,6 +134,10 @@ function injectThemeCSS(s) {
 #chat .mes .mes_text details.st-sb-card summary:after{content:"▼";font-size:.8em;margin-left:auto;transition:transform .3s cubic-bezier(.4,0,.2,1);opacity:.6;}
 #chat .mes .mes_text details.st-sb-card[open] summary:after{transform:rotate(180deg);}
 #chat .mes .mes_text details.st-sb-card .details-content{padding:10px 12px 12px;border-top:1px dashed rgba(${rgb},.2);font-size:.85em;line-height:1.8;color:var(--SmartThemeBodyColor,#333);word-break:break-word;}
+#chat .mes .mes_text details.st-sb-card .details-content .st-sb-line{padding:1px 0;}
+#chat .mes .mes_text .st-sb-wrap{margin:10px 0;}
+/* 未渲染（流式/解析失败）时的原始代码块：弱化显示，不刺眼 */
+#chat .mes .mes_text pre:has(> code.language-${FENCE}){opacity:.45;font-size:.8em;}
 `;
     let el = document.getElementById('st-status-bar-theme');
     if (!el) {
@@ -125,111 +148,57 @@ function injectThemeCSS(s) {
     el.textContent = css;
 }
 
-// ---------- 状态栏协议提示词（照搬 PiuPiu 服务端模板结构） ----------
+// ---------- 状态栏协议提示词（LLM 输出 statusbar JSON 代码块） ----------
 function buildProtocol(s) {
     const c = s.character;
     const u = s.user;
-    const charTpl = c.items.map(i => `${i.label}: [${i.label}]`).join('<br>');
-    const charRules = c.items.map(i => `- ${i.label}：${i.rule}`).join('<br>');
-    const userTpl = u.items.map(i => `${i.label}: [${i.label}]`).join('<br>');
-    const userRules = u.items.map(i => `- ${i.label}：${i.rule}`).join('<br>');
+    const charRules = c.items.map(i => `- ${i.label}：${i.rule}`).join('\n    ');
+    const userRules = u.items.map(i => `- ${i.label}：${i.rule}`).join('\n    ');
+    const charStats = c.items.map(i => `{"label":"${i.label}","value":"实际值"}`).join(',');
+    const userStats = u.items.map(i => `{"label":"${i.label}","value":"实际值"}`).join(',');
 
-    return `<StatusUpdateProtocol name="DynamicCharacterStatusEngine">
-    <Purpose>
-    在回复的【末尾】生成HTML格式的可折叠状态栏，用于追踪和展示当前场景中【所有非用户角色】的实时状态。
-    此状态栏是沉浸式体验的一部分，让读者能直观感知每个角色的当前情况。
-    </Purpose>
-    <SettingsIntegration>
-    【状态栏标题模板】（放在 <summary> 标签内，替换占位符为实际值）：
-    ${c.titleTemplate}
-    【状态项模板】（每行一项，将 [占位符] 替换为实际状态值）：
-    ${charTpl}
-    【各项书写规则】：
+    return `<StatusUpdateProtocol name="StatusBarEngine">
+<Purpose>
+在回复的【末尾】输出一个 \`\`\`${FENCE} 代码块（内含 JSON），用于追踪和展示当前场景中【所有在场角色】与【用户角色】的实时状态。
+这个代码块会被前端自动渲染成可折叠的状态卡片，是沉浸式体验的一部分，属于隐形 UI 元素。
+</Purpose>
+
+<OutputFormat>
+严格在回复【末尾】输出一个用 \`\`\`${FENCE} 围栏包裹的 JSON（围栏内只放 JSON，不要有其他文字）：
+\`\`\`${FENCE}
+{"characters":[{"name":"角色实际名字","age":"年龄","stats":[${charStats}]}],"user":{"name":"用户角色名","age":"年龄","stats":[${userStats}]}}
+\`\`\`
+- characters：数组，每个【在场且非用户的角色】一个对象。
+- user：对象，用户扮演的角色，必须有（即使信息很少）。
+</OutputFormat>
+
+<CharacterStatusRules>
+【角色识别与在场判定】：
+1. 分析角色卡/场景设定中【所有登场角色】（一张卡可能含多个角色，如姐妹、家庭、宠物等）。
+2. 【绝对禁止】把用户扮演的角色放进 characters 数组——用户只放 user 字段。
+3. 扫描最近5轮对话建立在场列表：说话 / 被提及 / 被暗示在场 / 与场景有明确物理在场关系 = 在场。
+4. 视为不在场（绝不生成）：从未出现、在其他房间、睡着、已离开、未登场。
+5. 每个在场角色在 characters 里占一个独立对象。
+【characters[].stats 各字段书写规则】：
     ${charRules}
-    </SettingsIntegration>
-    <MultiCharacterRules>
-    【角色识别规则】：
-    1. 仔细分析角色卡/场景设定中包含的【所有登场角色】。
-    2. 一张角色卡可能包含多个角色（如一个角色和她的宠物、一对姐妹、一个家庭等）。
-    3. 【绝对禁止】为【用户扮演的角色】生成此状态栏。
-    4. 只为【AI扮演的NPC/角色】生成状态栏。
-    【当前在场判定规则】（极为重要）：
-    - 扫描最近5轮对话，建立在场角色列表。
-    - 视为在场：最近对话中说话、被提及、被暗示在场、与场景有明确物理在场关系的角色。
-    - 视为不在场（绝不生成）：从未在对话中出现过、在其他房间、睡着、已离开、未登场的角色。
-    【单角色场景】：
-    - 标题使用状态栏标题模板（自动替换 {{name}} 为角色名、{{age}} 为角色年龄）。
-    - 生成【一个】状态栏。
-    【多角色场景】：
-    - 为【每个在场角色】分别生成【独立的】状态栏。
-    - 每个状态栏使用独立的 <details class="st-sb-card"> 标签包裹。
-    - <summary> 标签内的标题必须是【该角色的实际名字】，而非角色卡名称。
-    - 每个角色的状态项仍参考状态项模板，但标题用角色名替换。
-    </MultiCharacterRules>
-    <HTMLFormat>
-    严格遵循以下HTML格式，确保前端能正确渲染：
-    【单角色标准格式】：
-    <details class="st-sb-card">
-    <summary>${c.titleTemplate}</summary>
-    <div class="details-content">
-    ${charTpl}
-    </div>
-    </details>
-    【多角色格式示例】：
-    <details class="st-sb-card">
-    <summary>😊 角色A实际名字</summary>
-    <div class="details-content">
-    [参考状态项模板填充角色A的状态]
-    </div>
-    </details>
-    <details class="st-sb-card">
-    <summary>🌙 角色B实际名字</summary>
-    <div class="details-content">
-    [参考状态项模板填充角色B的状态]
-    </div>
-    </details>
-    </HTMLFormat>
-    <FinalNotes>
-    - 将模板中的 [占位符] 替换为【真实的、具体的当前状态描述】。
-    - 状态描述应当简洁有力，每项不超过20字。
-    - 状态应当反映【当前回复结束时】的最新情况，体现角色在本轮互动中的变化。
-    - 使用第三人称描述角色状态。
-    - 【不要】在正文中提及状态栏的存在，它是一个隐形的UI元素。
-    </FinalNotes>
-</StatusUpdateProtocol>
+</CharacterStatusRules>
 
-<StatusUpdateProtocol name="DynamicUserStatusEngine">
-    <Purpose>
-    在回复的【末尾】生成HTML格式的可折叠状态栏，用于追踪和展示【用户扮演角色】的实时状态。
-    </Purpose>
-    <SettingsIntegration>
-    【状态栏标题模板】（放在 <summary> 标签内）：
-    ${u.titleTemplate}
-    【状态项模板】（每行一项，将 [占位符] 替换为实际状态值）：
-    ${userTpl}
-    【各项书写规则】：
+<UserStatusRules>
+【用户状态规则】（user 字段）：
+1. 仅使用用户最新消息中明确写出的行为、语言和状态。
+2. 不得推测用户未明确表达的心理、情绪、感受、身体反应或动作；缺少依据的项目 value 填「未明确」。
+3. 只能整理用户已提供的信息，不能替用户补充或推进任何状态。
+【user.stats 各字段书写规则】：
     ${userRules}
-    </SettingsIntegration>
-    <Rules>
-    1. 仅使用用户最新消息中明确写出的行为、语言和状态。
-    2. 不得推测用户未明确表达的心理、情绪、感受、身体反应或动作；缺少依据的项目填写「未明确」。
-    3. 状态栏只能整理用户已经提供的信息，不能替用户补充或推进任何状态。
-    </Rules>
-    <HTMLFormat>
-    <details class="st-sb-card">
-    <summary>${u.titleTemplate}</summary>
-    <div class="details-content">
-    ${userTpl}
-    </div>
-    </details>
-    </HTMLFormat>
-    <FinalNotes>
-    - 将模板中的 [占位符] 替换为真实的、具体的当前状态描述。
-    - 状态描述应当简洁有力，每项不超过20字。
-    - 状态应当反映当前回复结束时的最新情况。
-    - 使用第三人称或客观描述（例如"兴奋"，而不是"你感到兴奋"）。
-    - 【不要】在正文中提及状态栏的存在，它是一个隐形的UI元素。
-    </FinalNotes>
+</UserStatusRules>
+
+<FinalNotes>
+- 把 value 填成【真实的、具体的当前状态描述】，每项不超过20字。
+- 状态应反映【当前回复结束时】的最新情况，体现本轮互动中的变化。
+- JSON 必须严格合法（双引号、无尾逗号），前端会直接 JSON.parse。
+- 【不要】在正文中提及状态栏/代码块的存在，它是隐形 UI 元素。
+- 若本回合没有任何在场角色（纯场景描写/独白），characters 可为空数组 []，但 user 字段必须存在。
+</FinalNotes>
 </StatusUpdateProtocol>`;
 }
 
@@ -240,7 +209,6 @@ globalThis.stStatusBarInterceptor = async function (chat, contextSize, abort, ty
         const s = getSettings();
         if (!s.enabled) return;
         const protocol = buildProtocol(s);
-        // 注入到最新一条消息之前（对话最深层），模型生成回复时在末尾输出状态栏
         chat.splice(chat.length - 1, 0, {
             is_user: false,
             name: 'System',
@@ -251,6 +219,74 @@ globalThis.stStatusBarInterceptor = async function (chat, contextSize, abort, ty
         console.error('[st_status_bar] interceptor error:', e);
     }
 };
+
+// ---------- 渲染：把 statusbar 代码块替换成状态栏 DOM ----------
+function applyTitle(tpl, name, age) {
+    return String(tpl || '{{name}} · {{age}}')
+        .replace(/\{\{name\}\}/g, name || '')
+        .replace(/\{\{age\}\}/g, age || '')
+        .replace(/\s*·\s*$/, '')      // 年龄缺失时去掉尾部分隔符
+        .trim();
+}
+
+function buildCard(entity, sideSettings) {
+    const d = document.createElement('details');
+    d.className = 'st-sb-card';
+    const sum = document.createElement('summary');
+    sum.textContent = applyTitle(sideSettings.titleTemplate, entity.name, entity.age);
+    const content = document.createElement('div');
+    content.className = 'details-content';
+    const stats = Array.isArray(entity.stats) ? entity.stats : [];
+    for (const st of stats) {
+        if (!st) continue;
+        const line = document.createElement('div');
+        line.className = 'st-sb-line';
+        const label = st.label != null ? String(st.label) : '';
+        const value = st.value != null ? String(st.value) : '未明确';
+        line.textContent = label ? `${label}: ${value}` : value;
+        content.appendChild(line);
+    }
+    d.appendChild(sum);
+    d.appendChild(content);
+    return d;
+}
+
+function buildStatusBarElement(data, s) {
+    const wrap = document.createElement('div');
+    wrap.className = 'st-sb-wrap';
+    // 用户状态栏固定放第一个
+    if (data.user) wrap.appendChild(buildCard(data.user, s.user));
+    const chars = Array.isArray(data.characters) ? data.characters : [];
+    for (const ch of chars) {
+        if (!ch) continue;
+        wrap.appendChild(buildCard(ch, s.character));
+    }
+    return wrap;
+}
+
+// 在一条消息的 .mes_text 内查找并替换 statusbar 代码块（幂等）
+function renderStatusBarIn(mesText, s) {
+    if (!mesText) return;
+    if (mesText.querySelector('.st-sb-wrap')) return; // 已处理过
+    const codes = mesText.querySelectorAll(`pre > code.language-${FENCE}, pre > code[class*="language-${FENCE}"]`);
+    for (const code of codes) {
+        const data = parseLooseJSON(code.textContent);
+        if (!data) continue;
+        const el = buildStatusBarElement(data, s);
+        const pre = code.closest('pre') || code;
+        pre.replaceWith(el);
+    }
+}
+
+function renderAllStatusBars() {
+    try {
+        const s = getSettings();
+        if (!s.enabled) return;
+        document.querySelectorAll('#chat .mes .mes_text').forEach(t => renderStatusBarIn(t, s));
+    } catch (e) {
+        console.error('[st_status_bar] render error:', e);
+    }
+}
 
 // ---------- 设置面板：渲染 ----------
 async function renderSettingsPanel() {
@@ -267,9 +303,7 @@ async function renderSettingsPanel() {
 
 function refreshAllUI() {
     const s = getSettings();
-    // 总开关
     $('#sb_enabled').prop('checked', !!s.enabled);
-    // 主题控件
     const t = s.theme;
     $('#sb_color_custom').val(t.primary);
     $('#sb_hex_label').text(t.primary);
@@ -281,13 +315,10 @@ function refreshAllUI() {
     document.querySelectorAll('.sb-swatch').forEach(sw => {
         sw.classList.toggle('active', sw.dataset.hex.toLowerCase() === t.primary.toLowerCase());
     });
-    // 标题模板
     $('#sb_char_title').val(s.character.titleTemplate);
     $('#sb_user_title').val(s.user.titleTemplate);
-    // 条目列表
     renderItemList('character', s.character.items);
     renderItemList('user', s.user.items);
-    // 灰化：未启用时参数区变灰
     $('#sb_settings_body').toggleClass('sb-disabled', !s.enabled);
 }
 
@@ -312,7 +343,6 @@ function renderItemList(side, items) {
         </div>`);
         box.append(row);
     });
-    // 空态
     if (!items.length) {
         box.append('<div class="sb-empty">（无条目，点下方"添加条目"）</div>');
     }
@@ -322,20 +352,19 @@ function esc(t) {
     return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// ---------- 事件绑定（同命名空间先 off 一次再链式 on，防互清） ----------
+// ---------- 事件绑定 ----------
 function bindEvents() {
     const NS = '.stsb';
     $(document).off(`click${NS} change${NS} input${NS}`);
 
-    // 总开关
     $(document).on(`change${NS}`, '#sb_enabled', function () {
         const s = getSettings();
         s.enabled = this.checked;
         saveSettings();
         refreshAllUI();
+        if (s.enabled) renderAllStatusBars();
     });
 
-    // 预设色板
     $(document).on(`click${NS}`, '.sb-swatch', function () {
         const s = getSettings();
         s.theme.primary = this.dataset.hex;
@@ -344,7 +373,6 @@ function bindEvents() {
         refreshAllUI();
     });
 
-    // 自定义取色
     $(document).on(`input${NS}`, '#sb_color_custom', function () {
         const s = getSettings();
         s.theme.primary = this.value;
@@ -354,7 +382,6 @@ function bindEvents() {
         document.querySelectorAll('.sb-swatch').forEach(sw => sw.classList.toggle('active', sw.dataset.hex.toLowerCase() === this.value.toLowerCase()));
     });
 
-    // 边框样式
     $(document).on(`click${NS}`, '.sb-style-btn', function () {
         const s = getSettings();
         s.theme.borderStyle = this.dataset.style;
@@ -363,7 +390,6 @@ function bindEvents() {
         document.querySelectorAll('.sb-style-btn').forEach(b => b.classList.toggle('active', b === this));
     });
 
-    // 粗细 / 圆角
     $(document).on(`input${NS}`, '#sb_border_width', function () {
         const s = getSettings();
         s.theme.borderWidth = parseInt(this.value);
@@ -379,7 +405,6 @@ function bindEvents() {
         applyTheme();
     });
 
-    // 恢复默认主题
     $(document).on(`click${NS}`, '#sb_theme_reset', function () {
         const s = getSettings();
         s.theme = structuredClone(DEFAULTS.theme);
@@ -388,7 +413,6 @@ function bindEvents() {
         refreshAllUI();
     });
 
-    // 标题模板输入
     $(document).on(`input${NS}`, '#sb_char_title', function () {
         const s = getSettings();
         s.character.titleTemplate = this.value;
@@ -400,7 +424,6 @@ function bindEvents() {
         saveSettings();
     });
 
-    // 条目：label / rule 输入
     $(document).on(`input${NS}`, '.sb-item-label', function () {
         const { side, idx } = rowInfo(this);
         const s = getSettings();
@@ -414,7 +437,6 @@ function bindEvents() {
         saveSettings();
     });
 
-    // 条目：上移 / 下移 / 删除（事件委托在文档层，捕获由 jQuery 委托处理）
     $(document).on(`click${NS}`, '.sb-item-up', function () {
         const { side, idx } = rowInfo(this);
         const s = getSettings();
@@ -443,7 +465,6 @@ function bindEvents() {
         renderItemList(side, s[side].items);
     });
 
-    // 添加条目
     $(document).on(`click${NS}`, '.sb-item-add', async function () {
         const side = this.dataset.side;
         const name = await sbPrompt('添加条目', '条目名（如：笑容）', '');
@@ -456,7 +477,6 @@ function bindEvents() {
         renderItemList(side, s[side].items);
     });
 
-    // 卡片折叠（点标题栏切换 sb-collapsed）
     $(document).on(`click${NS}`, '.sb-card-head', function (e) {
         if ($(e.target).closest('input, textarea, button, .sb-swatch, .sb-style-btn, .sb-item-row').length) return;
         $(this).closest('.sb-panel-card').toggleClass('sb-collapsed');
@@ -476,15 +496,32 @@ function applyTheme() {
 }
 
 // ---------- 初始化 ----------
+function debounce(fn, ms) {
+    let t = null;
+    return function (...args) {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), ms);
+    };
+}
+
+const scheduleRender = debounce(renderAllStatusBars, 120);
+
 (async () => {
     getSettings(); // 初始化默认设置
     const { eventSource, event_types } = SillyTavern.getContext();
     eventSource.on(event_types.APP_READY, () => {
         applyTheme();
         renderSettingsPanel();
+        renderAllStatusBars();
     });
-    // 切聊天/重载时保证主题还在
     eventSource.on(event_types.CHAT_CHANGED, () => {
         applyTheme();
+        scheduleRender();
     });
+    // 新消息渲染完成（流式结束时也走这里）/ 消息编辑更新 → 渲染状态栏
+    if (event_types.CHARACTER_MESSAGE_RENDERED) eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, scheduleRender);
+    if (event_types.USER_MESSAGE_RENDERED) eventSource.on(event_types.USER_MESSAGE_RENDERED, scheduleRender);
+    if (event_types.MESSAGE_UPDATED) eventSource.on(event_types.MESSAGE_UPDATED, scheduleRender);
+    // 流式输出结束事件（部分版本）
+    if (event_types.STREAM_TOKEN_RECEIVED) { /* 流式中不处理，等渲染完成事件 */ }
 })();
