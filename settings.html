@@ -149,3 +149,23 @@
         </div>
     </div>
 </div>
+
+<!-- ============ 添加条目弹窗（v2.3；渲染后由 JS 移到 body）============ -->
+<div class="sb-add-mask" id="sb_add_item_mask">
+    <div class="sb-add-dialog">
+        <div class="sb-add-title"><i class="fa-solid fa-plus"></i> 添加条目</div>
+        <div class="sb-add-field">
+            <label for="sb_add_name">条目名称</label>
+            <input type="text" class="sb-text-input" id="sb_add_name" maxlength="8" placeholder="条目名（如：笑容）" autocomplete="off">
+        </div>
+        <div class="sb-add-field">
+            <label for="sb_add_rule">状态栏规则</label>
+            <input type="text" class="sb-text-input" id="sb_add_rule" placeholder="留空则自动 = 条目名" autocomplete="off">
+            <div class="sb-add-hint">写给模型的描述：这个条目怎么展示、怎么取值</div>
+        </div>
+        <div class="sb-add-foot">
+            <button type="button" class="menu_button" id="sb_add_cancel">取消</button>
+            <button type="button" class="menu_button" id="sb_add_save" disabled>保存</button>
+        </div>
+    </div>
+</div>

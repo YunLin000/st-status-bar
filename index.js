@@ -393,6 +393,7 @@ async function renderSettingsPanel() {
         // 弹窗移到 body（避免受酒馆侧栏 transform 影响 fixed 定位）
         const $box = $('<div>').html(html);
         $box.find('#sb_modal_mask').appendTo(document.body);
+        $box.find('#sb_add_item_mask').appendTo(document.body);   // v2.3 添加条目弹窗
         // 其余（入口卡片）挂到扩展设置面板
         $box.children().appendTo('#extensions_settings2');
         bindEvents();
@@ -464,6 +465,19 @@ function renderThemePreview() {
     const $u = $('#sb_lp_user');  if ($u.length)  $u.text(build(s.user.items));
     const $c = $('#sb_lp_char');  if ($c.length)  $c.text(build(s.character.items));
 }
+
+// v2.3 添加条目弹窗：一个弹窗双输入（条目名 + 规则），条目名非空才可保存，规则留空则 = 条目名
+let sbAddSide = 'character';
+function openAddItemDialog(side) {
+    sbAddSide = side || 'character';
+    $('#sb_add_name').val('');
+    $('#sb_add_rule').val('');
+    $('#sb_add_save').prop('disabled', true);
+    $('#sb_add_item_mask').addClass('show');
+    setTimeout(() => { $('#sb_add_name').trigger('focus'); }, 30);
+}
+function closeAddItemDialog() { $('#sb_add_item_mask').removeClass('show'); }
+
 
 // ---------- 事件绑定 ----------
 function bindEvents() {
@@ -591,16 +605,26 @@ function bindEvents() {
         renderItemList(side, s[side].items);
     });
 
-    $(document).on(`click${NS}`, '.sb-item-add', async function () {
-        const side = this.dataset.side;
-        const name = await sbPrompt('添加条目', '条目名（如：笑容）', '');
+    $(document).on(`click${NS}`, '.sb-item-add', function () {
+        openAddItemDialog(this.dataset.side);
+    });
+    // v2.3 添加条目弹窗：条目名非空才可保存，规则留空则 = 条目名
+    $(document).on(`input${NS}`, '#sb_add_name', function () {
+        $('#sb_add_save').prop('disabled', !this.value.trim());
+    });
+    $(document).on(`click${NS}`, '#sb_add_cancel', function () { closeAddItemDialog(); });
+    $(document).on(`click${NS}`, '#sb_add_save', function () {
+        const name = $('#sb_add_name').val().trim();
         if (!name) return;
-        const rule = await sbPrompt('状态栏规则', '这个条目怎么展示、怎么描述（发给模型）', '填写具体、当下的状态，不超过20字');
-        if (rule === null) return;
+        const rule = $('#sb_add_rule').val().trim() || name;   // 规则留空 → 用条目名
         const s = getSettings();
-        s[side].items.push({ key: 'c' + Date.now(), label: name, rule: rule || '' });
+        s[sbAddSide].items.push({ key: 'c' + Date.now(), label: name, rule });
         saveSettings();
-        renderItemList(side, s[side].items);
+        renderItemList(sbAddSide, s[sbAddSide].items);
+        closeAddItemDialog();
+    });
+    $(document).on(`click${NS}`, '#sb_add_item_mask', function (e) {
+        if (e.target === this) closeAddItemDialog();
     });
 
     // 打开 / 关闭弹窗
