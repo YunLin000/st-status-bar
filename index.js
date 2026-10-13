@@ -474,15 +474,35 @@ function openAddItemDialog(side) {
     $('#sb_add_rule').val('');
     $('#sb_add_save').prop('disabled', true);
     $('#sb_add_item_mask').addClass('sb-modal-open');
+    _sbPositionMasks();
     setTimeout(() => { $('#sb_add_name').trigger('focus'); }, 30);
 }
 function closeAddItemDialog() { $('#sb_add_item_mask').removeClass('sb-modal-open'); }
+
+// 酒馆 style.css 给 html 加了 perspective/transform（修 chrome 模糊闪烁），
+// 导致 position:fixed 被降级成 absolute（相对文档而不是视口）→ 移动端滚动后弹窗错位。
+// 解法：JS 动态定位遮罩模拟 fixed（跟随滚动/缩放）。
+function _sbPositionMasks() {
+    document.querySelectorAll('.sb-modal-mask.sb-modal-open').forEach(function (m) {
+        m.style.top = (window.pageYOffset || window.scrollY) + 'px';
+        m.style.left = (window.pageXOffset || window.scrollX) + 'px';
+        m.style.width = window.innerWidth + 'px';
+        m.style.height = window.innerHeight + 'px';
+    });
+}
 
 
 // ---------- 事件绑定 ----------
 function bindEvents() {
     const NS = '.stsb';
     $(document).off(`click${NS} change${NS} input${NS}`);
+    // 遮罩动态定位（fixed 降级 absolute 的补偿）：一次性绑定原生监听
+    if (!window._sbPosBound) {
+        window._sbPosBound = true;
+        window.addEventListener('scroll', _sbPositionMasks, true);
+        window.addEventListener('resize', _sbPositionMasks);
+    }
+    _sbPositionMasks();
 
     $(document).on(`change${NS}`, '#sb_enabled', function () {
         const s = getSettings();
@@ -630,6 +650,7 @@ function bindEvents() {
     // 打开 / 关闭弹窗
     $(document).on(`click${NS}`, '#sb_open_panel', function () {
         $('#sb_modal_mask').addClass('sb-modal-open');
+        _sbPositionMasks();
     });
     $(document).on(`click${NS}`, '#sb_modal_close', function () {
         $('#sb_modal_mask').removeClass('sb-modal-open');
