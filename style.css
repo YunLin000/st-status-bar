@@ -246,3 +246,5 @@
     .sb-modal { max-width: 100%; max-height: 92vh; border-radius: 12px; }
     .sb-tab { padding: 9px 12px; font-size: 12.5px; }
 }
+/* --- v2.2 跟随酒馆主题：自定义主题区冻结 --- */
+.sb-custom-theme.disabled { opacity: .4; pointer-events: none; }

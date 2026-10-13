@@ -85,9 +85,18 @@
 
             <!-- ---------- 主题 Tab ---------- -->
             <div class="sb-pane" data-pane="theme">
+                <div class="sb-switch-row" style="margin-bottom:10px;">
+                    <b><i class="fa-solid fa-circle-half-stroke"></i> 跟随酒馆主题</b>
+                    <label class="sb-switch" for="sb_follow_st">
+                        <input type="checkbox" id="sb_follow_st" class="checkbox">
+                        <span class="sb-switch-slider"></span>
+                    </label>
+                </div>
+
+                <div id="sb_custom_theme" class="sb-custom-theme">
                 <div class="sb-field-label">主色（边框 / 文字 / 分隔线统一派生）</div>
                 <div class="sb-swatches">
-                    <div class="sb-swatch" data-hex="#ff6b9d" style="background:#ff6b9d" title="默认粉 #ff6b9d"></div>
+                    <div class="sb-swatch" data-hex="#ffffff" style="background:#ffffff" title="默认白 #ffffff"></div>
                     <div class="sb-swatch" data-hex="#3a4a5c" style="background:#3a4a5c" title="青黛"></div>
                     <div class="sb-swatch" data-hex="#5c7a6a" style="background:#5c7a6a" title="竹青"></div>
                     <div class="sb-swatch" data-hex="#b8860b" style="background:#b8860b" title="鎏金"></div>
@@ -96,9 +105,9 @@
                     <div class="sb-swatch" data-hex="#4a90d9" style="background:#4a90d9" title="天青"></div>
                 </div>
                 <div class="sb-custom-row">
-                    <input type="color" id="sb_color_custom" value="#ff6b9d">
+                    <input type="color" id="sb_color_custom" value="#ffffff">
                     <span>自定义</span>
-                    <code id="sb_hex_label">#ff6b9d</code>
+                    <code id="sb_hex_label">#ffffff</code>
                 </div>
 
                 <div class="sb-field-label" style="margin-top:12px;">边框样式</div>
@@ -120,24 +129,21 @@
                 </div>
 
                 <button type="button" class="menu_button sb-theme-reset" id="sb_theme_reset" style="width:100%;margin-top:8px;">
-                    <i class="fa-solid fa-rotate-left"></i> 恢复默认（粉 · 实线 · 1px · 12px）
+                    <i class="fa-solid fa-rotate-left"></i> 恢复默认（白 · 实线 · 1px · 12px）
                 </button>
 
                 <div class="sb-live-preview">
                     <div class="sb-lp-label"><i class="fa-solid fa-eye"></i> 样式预览（用户 + 角色）</div>
                     <details class="sb-lp-card" open>
-                        <summary>云清 · 20</summary>
-                        <div class="sb-lp-content">外貌: 未明确
-心情: 平静
-位置: 后院凉亭</div>
+                        <summary>用户名</summary>
+                        <div class="sb-lp-content">............</div>
                     </details>
                     <details class="sb-lp-card" open style="margin-top:8px;">
-                        <summary>林雪 · 18</summary>
-                        <div class="sb-lp-content">地点: 后院凉亭
-情绪: 忐忑
-穿着: 月白襦裙</div>
+                        <summary>角色名字</summary>
+                        <div class="sb-lp-content">............</div>
                     </details>
                 </div>
+                </div><!-- /sb_custom_theme 跟随酒馆主题时冻结 -->
             </div>
 
         </div>

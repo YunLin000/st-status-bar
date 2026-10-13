@@ -13,7 +13,8 @@ const FENCE = 'statusbar';   // LLM 输出的代码块围栏语言标记
 const DEFAULTS = {
     enabled: false,
     theme: {
-        primary: '#ff6b9d',
+        followST: true,         // 跟随酒馆主题（默认 ON；关闭后用自定义主题）
+        primary: '#ffffff',     // 自定义主色（默认白）
         borderStyle: 'solid',   // solid | dashed | dotted
         borderWidth: 1,
         borderRadius: 12,
@@ -159,15 +160,40 @@ async function sbConfirm(title, text) {
     return window.confirm(title);
 }
 
-// ---------- 主题 CSS 注入 ----------
+// ---------- 主题 CSS 注入（v2.2 起支持「跟随酒馆主题」/「自定义主题」两套） ----------
 function injectThemeCSS(s) {
     const t = s.theme;
-    const rgb = hexToRgbStr(t.primary);
-    const light = lighten(t.primary, 20);
-    const css = `
+    const follow = !!t.followST;
+    let css;
+    if (follow) {
+        // ===== 跟随酒馆主题：颜色全走酒馆 --SmartTheme* 变量，结构样式保留 =====
+        css = `
+:root{--st-sb-light:var(--SmartThemeMainColor,#ff9ec4);}
+#chat .mes .mes_text details.st-sb-card{margin:10px 0;background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 10%,transparent);border:1px solid var(--SmartThemeBorderColor,#555);border-radius:${t.borderRadius}px;overflow:hidden;transition:border-color .3s ease;}
+#chat .mes .mes_text details.st-sb-card[open]{background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 16%,transparent);box-shadow:0 2px 10px var(--SmartThemeShadowColor,rgba(0,0,0,.25));}
+#chat .mes .mes_text details.st-sb-card summary{padding:8px 12px;cursor:pointer;font-size:.9em;font-weight:600;color:var(--SmartThemeMainColor,#ff9ec4);user-select:none;display:flex;align-items:center;gap:6px;transition:background .2s;list-style:none;}
+#chat .mes .mes_text details.st-sb-card summary::-webkit-details-marker,#chat .mes .mes_text details.st-sb-card summary::marker{display:none;content:"";}
+#chat .mes .mes_text details.st-sb-card summary:after{content:"▼";font-size:.8em;margin-left:auto;transition:transform .3s cubic-bezier(.4,0,.2,1);opacity:.6;}
+#chat .mes .mes_text details.st-sb-card[open] summary:after{transform:rotate(180deg);}
+#chat .mes .mes_text details.st-sb-card .details-content{padding:10px 12px 12px;border-top:1px dashed color-mix(in srgb,var(--SmartThemeBorderColor,#555) 50%,transparent);font-size:.85em;line-height:1.8;color:var(--SmartThemeBodyColor,#333);word-break:break-word;}
+#chat .mes .mes_text details.st-sb-card .details-content .st-sb-line{padding:1px 0;}
+#chat .mes .mes_text .st-sb-wrap{margin:10px 0;}
+/* 面板主题预览卡：与聊天里状态栏完全一致（跟随模式） */
+#sb_modal_mask .sb-lp-card{background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 10%,transparent)!important;border:1px solid var(--SmartThemeBorderColor,#555)!important;border-radius:${t.borderRadius}px!important;overflow:hidden;}
+#sb_modal_mask .sb-lp-card[open]{box-shadow:0 2px 10px var(--SmartThemeShadowColor,rgba(0,0,0,.25))!important;}
+#sb_modal_mask .sb-lp-card summary{padding:8px 12px!important;font-size:.9em!important;font-weight:600!important;color:var(--SmartThemeMainColor,#ff9ec4)!important;background:transparent!important;border:none!important;border-radius:0!important;}
+#sb_modal_mask .sb-lp-card .sb-lp-content{padding:10px 12px 12px!important;border:none!important;border-top:1px dashed color-mix(in srgb,var(--SmartThemeBorderColor,#555) 50%,transparent)!important;border-radius:0!important;color:var(--SmartThemeBodyColor,#333)!important;font-size:.85em!important;line-height:1.8!important;white-space:pre-wrap;}
+/* 未渲染（流式/解析失败）时的原始代码块：弱化显示，不刺眼 */
+#chat .mes .mes_text pre:has(> code.language-${FENCE}){opacity:.45;font-size:.8em;}
+`;
+    } else {
+        // ===== 自定义主题 =====
+        const rgb = hexToRgbStr(t.primary);
+        const light = lighten(t.primary, 20);
+        css = `
 :root{--st-sb-rgb:${rgb};--st-sb-light:${light};}
-#chat .mes .mes_text details.st-sb-card{margin:10px 0;background:rgba(128,128,128,.06);background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 10%,transparent);border:${t.borderWidth}px ${t.borderStyle} rgba(${rgb},.22);border-radius:${t.borderRadius}px;overflow:hidden;transition:border-color .3s ease;}
-#chat .mes .mes_text details.st-sb-card[open]{background:rgba(128,128,128,.1);background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 16%,transparent);box-shadow:0 2px 10px rgba(${rgb},.12);}
+#chat .mes .mes_text details.st-sb-card{margin:10px 0;background:rgba(${rgb},.08);border:${t.borderWidth}px ${t.borderStyle} rgba(${rgb},.22);border-radius:${t.borderRadius}px;overflow:hidden;transition:border-color .3s ease;}
+#chat .mes .mes_text details.st-sb-card[open]{background:rgba(${rgb},.12);box-shadow:0 2px 10px rgba(${rgb},.12);}
 #chat .mes .mes_text details.st-sb-card summary{padding:8px 12px;cursor:pointer;font-size:.9em;font-weight:600;color:${light};user-select:none;display:flex;align-items:center;gap:6px;transition:background .2s;list-style:none;}
 #chat .mes .mes_text details.st-sb-card summary::-webkit-details-marker,#chat .mes .mes_text details.st-sb-card summary::marker{display:none;content:"";}
 #chat .mes .mes_text details.st-sb-card summary:after{content:"▼";font-size:.8em;margin-left:auto;transition:transform .3s cubic-bezier(.4,0,.2,1);opacity:.6;}
@@ -175,12 +201,15 @@ function injectThemeCSS(s) {
 #chat .mes .mes_text details.st-sb-card .details-content{padding:10px 12px 12px;border-top:1px dashed rgba(${rgb},.2);font-size:.85em;line-height:1.8;color:var(--SmartThemeBodyColor,#333);word-break:break-word;}
 #chat .mes .mes_text details.st-sb-card .details-content .st-sb-line{padding:1px 0;}
 #chat .mes .mes_text .st-sb-wrap{margin:10px 0;}
-/* 面板主题预览卡：跟随主题参数（粗细/样式/圆角/颜色），与聊天里状态栏同步 */
-#sb_modal_mask .sb-lp-card summary{border:${t.borderWidth}px ${t.borderStyle} rgba(${rgb},.3)!important;border-radius:${t.borderRadius}px!important;}
-#sb_modal_mask .sb-lp-card .sb-lp-content{border:1px dashed rgba(${rgb},.2)!important;border-radius:${t.borderRadius}px!important;}
+/* 面板主题预览卡：与聊天里状态栏完全一致（含展开发光） */
+#sb_modal_mask .sb-lp-card{background:rgba(${rgb},.08)!important;border:${t.borderWidth}px ${t.borderStyle} rgba(${rgb},.22)!important;border-radius:${t.borderRadius}px!important;overflow:hidden;}
+#sb_modal_mask .sb-lp-card[open]{background:rgba(${rgb},.12)!important;box-shadow:0 2px 10px rgba(${rgb},.12)!important;}
+#sb_modal_mask .sb-lp-card summary{padding:8px 12px!important;font-size:.9em!important;font-weight:600!important;color:${light}!important;background:transparent!important;border:none!important;border-radius:0!important;}
+#sb_modal_mask .sb-lp-card .sb-lp-content{padding:10px 12px 12px!important;border:none!important;border-top:1px dashed rgba(${rgb},.2)!important;border-radius:0!important;font-size:.85em!important;line-height:1.8!important;color:var(--SmartThemeBodyColor,#333)!important;white-space:pre-wrap;}
 /* 未渲染（流式/解析失败）时的原始代码块：弱化显示，不刺眼 */
 #chat .mes .mes_text pre:has(> code.language-${FENCE}){opacity:.45;font-size:.8em;}
 `;
+    }
     let el = document.getElementById('st-status-bar-theme');
     if (!el) {
         el = document.createElement('style');
@@ -371,6 +400,8 @@ function refreshAllUI() {
     const s = getSettings();
     $('#sb_enabled').prop('checked', !!s.enabled);
     const t = s.theme;
+    $('#sb_follow_st').prop('checked', !!t.followST);
+    $('#sb_custom_theme').toggleClass('disabled', !!t.followST);
     $('#sb_color_custom').val(t.primary);
     $('#sb_hex_label').text(t.primary);
     $('#sb_border_width').val(t.borderWidth);
@@ -428,6 +459,14 @@ function bindEvents() {
         saveSettings();
         refreshAllUI();
         if (s.enabled) renderAllStatusBars();
+    });
+
+    $(document).on(`change${NS}`, '#sb_follow_st', function () {
+        const s = getSettings();
+        s.theme.followST = this.checked;
+        saveSettings();
+        applyTheme();
+        refreshAllUI();
     });
 
     $(document).on(`click${NS}`, '.sb-swatch', function () {
