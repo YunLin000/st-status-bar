@@ -13,7 +13,7 @@ const FENCE = 'statusbar';   // LLM 输出的代码块围栏语言标记
 const DEFAULTS = {
     enabled: false,
     theme: {
-        followST: true,         // 跟随酒馆主题（默认 ON；关闭后用自定义主题）
+        followST: false,        // 跟随酒馆主题（默认 OFF；开启后自定义区冻结）
         primary: '#ffffff',     // 自定义主色（默认白）
         borderStyle: 'solid',   // solid | dashed | dotted
         borderWidth: 1,
@@ -77,7 +77,13 @@ function mergeDefaults(target, defaults) {
 function getSettings() {
     const { extensionSettings } = SillyTavern.getContext();
     if (!extensionSettings[MODULE]) extensionSettings[MODULE] = {};
-    return mergeDefaults(extensionSettings[MODULE], DEFAULTS);
+    const s = mergeDefaults(extensionSettings[MODULE], DEFAULTS);
+    // v2.2 theme 嵌套对象逐键补齐（防旧数据缺 followST 等新字段）
+    if (typeof s.theme !== 'object' || s.theme === null) s.theme = {};
+    for (const k of Object.keys(DEFAULTS.theme)) {
+        if (s.theme[k] === undefined) s.theme[k] = structuredClone(DEFAULTS.theme[k]);
+    }
+    return s;
 }
 
 function saveSettings() {
@@ -171,7 +177,7 @@ function injectThemeCSS(s) {
 :root{--st-sb-light:var(--SmartThemeMainColor,#ff9ec4);}
 #chat .mes .mes_text details.st-sb-card{margin:10px 0;background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 10%,transparent);border:1px solid var(--SmartThemeBorderColor,#555);border-radius:${t.borderRadius}px;overflow:hidden;transition:border-color .3s ease;}
 #chat .mes .mes_text details.st-sb-card[open]{background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 16%,transparent);box-shadow:0 2px 10px var(--SmartThemeShadowColor,rgba(0,0,0,.25));}
-#chat .mes .mes_text details.st-sb-card summary{padding:8px 12px;cursor:pointer;font-size:.9em;font-weight:600;color:var(--SmartThemeMainColor,#ff9ec4);user-select:none;display:flex;align-items:center;gap:6px;transition:background .2s;list-style:none;}
+#chat .mes .mes_text details.st-sb-card summary{padding:8px 12px;cursor:pointer;font-size:.9em;font-weight:600;color:var(--SmartThemeBodyColor,#ddd);user-select:none;display:flex;align-items:center;gap:6px;transition:background .2s;list-style:none;}
 #chat .mes .mes_text details.st-sb-card summary::-webkit-details-marker,#chat .mes .mes_text details.st-sb-card summary::marker{display:none;content:"";}
 #chat .mes .mes_text details.st-sb-card summary:after{content:"▼";font-size:.8em;margin-left:auto;transition:transform .3s cubic-bezier(.4,0,.2,1);opacity:.6;}
 #chat .mes .mes_text details.st-sb-card[open] summary:after{transform:rotate(180deg);}
@@ -181,7 +187,7 @@ function injectThemeCSS(s) {
 /* 面板主题预览卡：与聊天里状态栏完全一致（跟随模式） */
 #sb_modal_mask .sb-lp-card{background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 10%,transparent)!important;border:1px solid var(--SmartThemeBorderColor,#555)!important;border-radius:${t.borderRadius}px!important;overflow:hidden;}
 #sb_modal_mask .sb-lp-card[open]{box-shadow:0 2px 10px var(--SmartThemeShadowColor,rgba(0,0,0,.25))!important;}
-#sb_modal_mask .sb-lp-card summary{padding:8px 12px!important;font-size:.9em!important;font-weight:600!important;color:var(--SmartThemeMainColor,#ff9ec4)!important;background:transparent!important;border:none!important;border-radius:0!important;}
+#sb_modal_mask .sb-lp-card summary{padding:8px 12px!important;font-size:.9em!important;font-weight:600!important;color:var(--SmartThemeBodyColor,#ddd)!important;background:transparent!important;border:none!important;border-radius:0!important;}
 #sb_modal_mask .sb-lp-card .sb-lp-content{padding:10px 12px 12px!important;border:none!important;border-top:1px dashed color-mix(in srgb,var(--SmartThemeBorderColor,#555) 50%,transparent)!important;border-radius:0!important;color:var(--SmartThemeBodyColor,#333)!important;font-size:.85em!important;line-height:1.8!important;white-space:pre-wrap;}
 /* 未渲染（流式/解析失败）时的原始代码块：弱化显示，不刺眼 */
 #chat .mes .mes_text pre:has(> code.language-${FENCE}){opacity:.45;font-size:.8em;}
@@ -511,7 +517,11 @@ function bindEvents() {
 
     $(document).on(`click${NS}`, '#sb_theme_reset', function () {
         const s = getSettings();
-        s.theme = structuredClone(DEFAULTS.theme);
+        // v2.2 只重置外观四项，保留「跟随酒馆主题」开关状态（与云绘主题一致）
+        s.theme.primary = '#ffffff';
+        s.theme.borderStyle = 'solid';
+        s.theme.borderWidth = 1;
+        s.theme.borderRadius = 12;
         saveSettings();
         applyTheme();
         refreshAllUI();
