@@ -229,9 +229,9 @@
 .sb-lp-card summary::marker { display: none; }
 .sb-lp-card summary::after {
     content: "▸"; font-size: 12px; margin-left: auto; opacity: .6;
-    transition: transform .25s cubic-bezier(.4,0,.2,1);
+    transition: none;   /* v2.3.6 content 切换(▸→▾)，不再 rotate */
 }
-.sb-lp-card[open] summary::after { transform: rotate(180deg); }
+.sb-lp-card[open] summary::after { content: "▾"; }   /* v2.3.6 与聊天一致：展开切 ▾ */
 .sb-lp-card .sb-lp-content {
     padding: 9px 10px 11px; margin-top: 6px;
     border: 1px dashed color-mix(in srgb, var(--st-sb-light, #ff6b9d) 20%, transparent);
