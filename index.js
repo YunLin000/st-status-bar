@@ -175,6 +175,9 @@ function injectThemeCSS(s) {
 #chat .mes .mes_text details.st-sb-card .details-content{padding:10px 12px 12px;border-top:1px dashed rgba(${rgb},.2);font-size:.85em;line-height:1.8;color:var(--SmartThemeBodyColor,#333);word-break:break-word;}
 #chat .mes .mes_text details.st-sb-card .details-content .st-sb-line{padding:1px 0;}
 #chat .mes .mes_text .st-sb-wrap{margin:10px 0;}
+/* 面板主题预览卡：跟随主题参数（粗细/样式/圆角/颜色），与聊天里状态栏同步 */
+#sb_modal_mask .sb-lp-card summary{border:${t.borderWidth}px ${t.borderStyle} rgba(${rgb},.3)!important;border-radius:${t.borderRadius}px!important;}
+#sb_modal_mask .sb-lp-card .sb-lp-content{border:1px dashed rgba(${rgb},.2)!important;border-radius:${t.borderRadius}px!important;}
 /* 未渲染（流式/解析失败）时的原始代码块：弱化显示，不刺眼 */
 #chat .mes .mes_text pre:has(> code.language-${FENCE}){opacity:.45;font-size:.8em;}
 `;
