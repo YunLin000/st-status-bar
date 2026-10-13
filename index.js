@@ -179,8 +179,8 @@ function injectThemeCSS(s) {
 #chat .mes .mes_text details.st-sb-card[open]{background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 16%,transparent);box-shadow:0 2px 10px var(--SmartThemeShadowColor,rgba(0,0,0,.25));}
 #chat .mes .mes_text details.st-sb-card summary{padding:8px 12px;cursor:pointer;font-size:.9em;font-weight:600;color:var(--SmartThemeBodyColor,#ddd);user-select:none;display:flex;align-items:center;gap:6px;transition:background .2s;list-style:none;}
 #chat .mes .mes_text details.st-sb-card summary::-webkit-details-marker,#chat .mes .mes_text details.st-sb-card summary::marker{display:none;content:"";}
-#chat .mes .mes_text details.st-sb-card summary:after{content:"▼";font-size:12px;margin-left:auto;transition:transform .3s cubic-bezier(.4,0,.2,1);opacity:.6;}
-#chat .mes .mes_text details.st-sb-card[open] summary:after{transform:rotate(180deg);}
+#chat .mes .mes_text details.st-sb-card summary:after{content:"▸";font-size:12px;margin-left:auto;opacity:.6;}   /* v2.3.4 小三角字符与云绘同款(▸/▾)，大小一致 */
+#chat .mes .mes_text details.st-sb-card[open] summary:after{content:"▾";}
 #chat .mes .mes_text details.st-sb-card .details-content{padding:10px 12px 12px;border-top:1px dashed color-mix(in srgb,var(--SmartThemeBorderColor,#555) 50%,transparent);font-size:.85em;line-height:1.8;color:var(--SmartThemeBodyColor,#333);word-break:break-word;}
 #chat .mes .mes_text details.st-sb-card .details-content .st-sb-line{padding:1px 0;}
 #chat .mes .mes_text .st-sb-wrap{margin:10px 0;}
@@ -202,8 +202,8 @@ function injectThemeCSS(s) {
 #chat .mes .mes_text details.st-sb-card[open]{background:rgba(${rgb},.12);box-shadow:0 2px 10px rgba(${rgb},.12);}
 #chat .mes .mes_text details.st-sb-card summary{padding:8px 12px;cursor:pointer;font-size:.9em;font-weight:600;color:${light};user-select:none;display:flex;align-items:center;gap:6px;transition:background .2s;list-style:none;}
 #chat .mes .mes_text details.st-sb-card summary::-webkit-details-marker,#chat .mes .mes_text details.st-sb-card summary::marker{display:none;content:"";}
-#chat .mes .mes_text details.st-sb-card summary:after{content:"▼";font-size:12px;margin-left:auto;transition:transform .3s cubic-bezier(.4,0,.2,1);opacity:.6;}
-#chat .mes .mes_text details.st-sb-card[open] summary:after{transform:rotate(180deg);}
+#chat .mes .mes_text details.st-sb-card summary:after{content:"▸";font-size:12px;margin-left:auto;opacity:.6;}   /* v2.3.4 小三角字符与云绘同款(▸/▾)，大小一致 */
+#chat .mes .mes_text details.st-sb-card[open] summary:after{content:"▾";}
 #chat .mes .mes_text details.st-sb-card .details-content{padding:10px 12px 12px;border-top:1px dashed rgba(${rgb},.2);font-size:.85em;line-height:1.8;color:var(--SmartThemeBodyColor,#333);word-break:break-word;}
 #chat .mes .mes_text details.st-sb-card .details-content .st-sb-line{padding:1px 0;}
 #chat .mes .mes_text .st-sb-wrap{margin:10px 0;}

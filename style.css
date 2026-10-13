@@ -228,7 +228,7 @@
 .sb-lp-card summary::-webkit-details-marker,
 .sb-lp-card summary::marker { display: none; }
 .sb-lp-card summary::after {
-    content: "▼"; font-size: 12px; margin-left: auto; opacity: .6;
+    content: "▸"; font-size: 12px; margin-left: auto; opacity: .6;
     transition: transform .25s cubic-bezier(.4,0,.2,1);
 }
 .sb-lp-card[open] summary::after { transform: rotate(180deg); }
