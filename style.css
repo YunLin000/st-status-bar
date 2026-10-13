@@ -116,7 +116,7 @@
 }
 .sb-item-label:focus { outline: none; border-color: var(--st-sb-light, #ff9ec4); }
 .sb-item-rule {
-    min-height: 44px; resize: vertical; padding: 5px 8px;
+    min-height: 66px; resize: vertical; padding: 5px 8px;
     border: 1px solid var(--SmartThemeBorderColor, #555);
     border-radius: 5px; background: var(--SmartThemeBlurTintColor, #333);
     color: var(--SmartThemeBodyColor, #ccc); font-size: 12px; line-height: 1.5;
