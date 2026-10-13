@@ -174,7 +174,7 @@ function injectThemeCSS(s) {
     if (follow) {
         // ===== 跟随酒馆主题：颜色全走酒馆 --SmartTheme* 变量，结构样式保留 =====
         css = `
-:root{--st-sb-light:var(--SmartThemeMainColor,#ff9ec4);}
+:root{--st-sb-light:var(--SmartThemeQuoteColor,#5caaff);}
 #chat .mes .mes_text details.st-sb-card{margin:10px 0;background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 10%,transparent);border:1px solid var(--SmartThemeBorderColor,#555);border-radius:${t.borderRadius}px;overflow:hidden;transition:border-color .3s ease;}
 #chat .mes .mes_text details.st-sb-card[open]{background:color-mix(in srgb,var(--SmartThemeBlurTintColor,#888) 16%,transparent);box-shadow:0 2px 10px var(--SmartThemeShadowColor,rgba(0,0,0,.25));}
 #chat .mes .mes_text details.st-sb-card summary{padding:8px 12px;cursor:pointer;font-size:.9em;font-weight:600;color:var(--SmartThemeBodyColor,#ddd);user-select:none;display:flex;align-items:center;gap:6px;transition:background .2s;list-style:none;}
@@ -448,10 +448,21 @@ function renderItemList(side, items) {
     if (!items.length) {
         box.append('<div class="sb-empty">（无条目，点下方"添加条目"）</div>');
     }
+    renderThemePreview();   // v2.2 条目变动后同步刷新主题预览
 }
 
 function esc(t) {
     return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// v2.2 主题预览：实时反映角色/用户条目（条目名：............），模拟聊天里状态栏的样子
+function renderThemePreview() {
+    const s = getSettings();
+    const build = items => (Array.isArray(items) && items.length
+        ? items.map(i => `${esc(i.label || '条目')}：............`).join('\n')
+        : '（无条目）');
+    const $u = $('#sb_lp_user');  if ($u.length)  $u.text(build(s.user.items));
+    const $c = $('#sb_lp_char');  if ($c.length)  $c.text(build(s.character.items));
 }
 
 // ---------- 事件绑定 ----------
@@ -543,6 +554,7 @@ function bindEvents() {
         const s = getSettings();
         if (s[side].items[idx]) s[side].items[idx].label = this.value;
         saveSettings();
+        renderThemePreview();   // v2.2 标题输入实时反映到预览
     });
     $(document).on(`input${NS}`, '.sb-item-rule', function () {
         const { side, idx } = rowInfo(this);
