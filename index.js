@@ -352,11 +352,29 @@ async function renderSettingsPanel() {
     const { renderExtensionTemplateAsync } = SillyTavern.getContext();
     try {
         const html = await renderExtensionTemplateAsync('third-party/st-status-bar', 'settings');
-        $('#extensions_settings2').append(html);
+        // 弹窗移到 body（避免受酒馆侧栏 transform 影响 fixed 定位）
+        const $box = $('<div>').html(html);
+        $box.find('#sb_modal_mask').appendTo(document.body);
+        // 其余（入口卡片）挂到扩展设置面板
+        $box.children().appendTo('#extensions_settings2');
         bindEvents();
         refreshAllUI();
+        updatePreview();
     } catch (e) {
         console.error('[st_status_bar] render settings error:', e);
+    }
+}
+
+const PREVIEW_NAMES = { character: { name: '林雪', age: '18' }, user: { name: '云清', age: '20' } };
+function updatePreview() {
+    const s = getSettings();
+    for (const side of ['character', 'user']) {
+        const conf = s[side];
+        const ex = PREVIEW_NAMES[side];
+        const title = applyTitle(conf.titleTemplate, ex.name, ex.age) || (side === 'user' ? '用户状态' : '角色状态');
+        $(`#sb_preview_title_${side}`).text(title);
+        const lines = (conf.items || []).map(i => `${i.label}: …`).join('\n');
+        $(`#sb_preview_content_${side}`).text(lines || '（无条目）');
     }
 }
 
@@ -379,6 +397,7 @@ function refreshAllUI() {
     renderItemList('character', s.character.items);
     renderItemList('user', s.user.items);
     $('#sb_settings_body').toggleClass('sb-disabled', !s.enabled);
+    updatePreview();
 }
 
 function renderItemList(side, items) {
@@ -405,6 +424,7 @@ function renderItemList(side, items) {
     if (!items.length) {
         box.append('<div class="sb-empty">（无条目，点下方"添加条目"）</div>');
     }
+    updatePreview();
 }
 
 function esc(t) {
@@ -476,11 +496,13 @@ function bindEvents() {
         const s = getSettings();
         s.character.titleTemplate = this.value;
         saveSettings();
+        updatePreview();
     });
     $(document).on(`input${NS}`, '#sb_user_title', function () {
         const s = getSettings();
         s.user.titleTemplate = this.value;
         saveSettings();
+        updatePreview();
     });
 
     $(document).on(`input${NS}`, '.sb-item-label', function () {
@@ -488,6 +510,7 @@ function bindEvents() {
         const s = getSettings();
         if (s[side].items[idx]) s[side].items[idx].label = this.value;
         saveSettings();
+        updatePreview();
     });
     $(document).on(`input${NS}`, '.sb-item-rule', function () {
         const { side, idx } = rowInfo(this);
@@ -536,9 +559,24 @@ function bindEvents() {
         renderItemList(side, s[side].items);
     });
 
-    $(document).on(`click${NS}`, '.sb-card-head', function (e) {
-        if ($(e.target).closest('input, textarea, button, .sb-swatch, .sb-style-btn, .sb-item-row').length) return;
-        $(this).closest('.sb-panel-card').toggleClass('sb-collapsed');
+    // 打开 / 关闭弹窗
+    $(document).on(`click${NS}`, '#sb_open_panel', function () {
+        $('#sb_modal_mask').addClass('sb-modal-open');
+    });
+    $(document).on(`click${NS}`, '#sb_modal_close', function () {
+        $('#sb_modal_mask').removeClass('sb-modal-open');
+    });
+    $(document).on(`click${NS}`, '#sb_modal_mask', function (e) {
+        if (e.target === this) $(this).removeClass('sb-modal-open');
+    });
+    // Tab 切换
+    $(document).on(`click${NS}`, '.sb-tab', function () {
+        const tab = $(this).data('tab');
+        $('.sb-tab').removeClass('active');
+        $(this).addClass('active');
+        $('.sb-pane').removeClass('active');
+        $(`.sb-pane[data-pane="${tab}"]`).addClass('active');
+        updatePreview();
     });
 }
 

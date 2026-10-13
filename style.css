@@ -142,3 +142,108 @@
 
 /* --- 启用灰化 --- */
 #sb_settings_body.sb-disabled { opacity: .45; pointer-events: none; }
+
+/* ============================================================
+   v2.1 弹窗面板（入口按钮 / 遮罩 / Tab / 实时预览）
+   ============================================================ */
+
+/* --- 打开面板按钮 --- */
+.sb-open-panel { width: 100%; margin-top: 10px; padding: 9px 0; font-size: 13px; }
+
+/* --- 弹窗遮罩与容器 --- */
+.sb-modal-mask {
+    position: fixed; inset: 0; z-index: 99999;
+    background: rgba(0,0,0,.55);
+    display: none; align-items: center; justify-content: center;
+    padding: 18px;
+}
+.sb-modal-mask.sb-modal-open { display: flex; }
+.sb-modal {
+    background: var(--SmartThemeBlurTintColor, #26282f);
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    border-radius: 14px;
+    width: 100%; max-width: 640px; max-height: 85vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    color: var(--SmartThemeBodyColor, #ccc);
+}
+.sb-modal-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 13px 18px; border-bottom: 1px solid var(--SmartThemeBorderColor, #555);
+    font-size: 15px;
+}
+.sb-modal-head b { color: var(--SmartThemeBodyColor, #eee); }
+.sb-modal-head > i { color: var(--st-sb-light, #ff9ec4); }
+.sb-modal-close {
+    margin-left: auto; width: 30px; height: 30px;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--SmartThemeBodyColor, #ccc); font-size: 15px; border-radius: 8px;
+    transition: background .15s;
+}
+.sb-modal-close:hover { background: rgba(128,128,128,.2); }
+
+/* --- Tab 栏 --- */
+.sb-tabs {
+    display: flex; gap: 4px; padding: 10px 16px 0;
+    border-bottom: 1px solid var(--SmartThemeBorderColor, #555);
+}
+.sb-tab {
+    padding: 9px 16px; font-size: 13px; font-weight: 600;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--SmartThemeBodyColor, #ccc); opacity: .7; border-radius: 9px 9px 0 0;
+    border-bottom: 2px solid transparent; transition: all .15s;
+    display: flex; align-items: center; gap: 6px;
+}
+.sb-tab i { font-size: 12px; }
+.sb-tab:hover { opacity: 1; }
+.sb-tab.active {
+    opacity: 1; color: var(--st-sb-light, #ff9ec4);
+    border-bottom-color: var(--st-sb-light, #ff6b9d);
+    background: color-mix(in srgb, var(--st-sb-light, #ff9ec4) 12%, transparent);
+}
+
+/* --- Tab 内容 --- */
+.sb-tab-body { padding: 16px 18px; overflow-y: auto; flex: 1; }
+.sb-pane { display: none; }
+.sb-pane.active { display: block; }
+
+/* --- 实时预览 --- */
+.sb-live-preview {
+    margin-top: 16px; padding: 11px 12px;
+    border: 1px dashed var(--SmartThemeBorderColor, #555); border-radius: 9px;
+}
+.sb-lp-label {
+    font-size: 12px; color: var(--SmartThemeBodyColor, #ccc);
+    opacity: .65; margin-bottom: 8px;
+}
+.sb-lp-label i { color: var(--st-sb-light, #ff9ec4); }
+.sb-lp-card { margin: 0; }
+.sb-lp-card summary {
+    list-style: none; padding: 7px 10px; font-size: 13px; font-weight: 600;
+    color: var(--st-sb-light, #ff9ec4); cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    border: 1px solid color-mix(in srgb, var(--st-sb-light, #ff6b9d) 25%, transparent);
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--st-sb-light, #ff6b9d) 6%, transparent);
+}
+.sb-lp-card summary::-webkit-details-marker,
+.sb-lp-card summary::marker { display: none; }
+.sb-lp-card summary::after {
+    content: "▼"; font-size: .75em; margin-left: auto; opacity: .6;
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+}
+.sb-lp-card[open] summary::after { transform: rotate(180deg); }
+.sb-lp-card .sb-lp-content {
+    padding: 9px 10px 11px; margin-top: 6px;
+    border: 1px dashed color-mix(in srgb, var(--st-sb-light, #ff6b9d) 20%, transparent);
+    border-radius: 9px;
+    white-space: pre-wrap; font-size: 12.5px; line-height: 1.7;
+    color: var(--SmartThemeBodyColor, #ccc);
+}
+
+/* --- 手机端：弹窗几乎铺满 --- */
+@media (max-width: 600px) {
+    .sb-modal-mask { padding: 8px; }
+    .sb-modal { max-width: 100%; max-height: 92vh; border-radius: 12px; }
+    .sb-tab { padding: 9px 12px; font-size: 12.5px; }
+}

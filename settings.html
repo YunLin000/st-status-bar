@@ -1,11 +1,12 @@
-<!-- 状态栏扩展 v2.0.0 设置面板（可折叠状态栏） -->
+<!-- 状态栏扩展 v2.1 设置面板：入口卡片 + 独立弹窗（角色 / 用户 / 主题 三 Tab） -->
 <div class="inline-drawer">
     <div class="inline-drawer-toggle inline-drawer-header">
-        <b>📊 状态栏扩展</b>
+        <b>状态栏扩展</b>
         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
     </div>
     <div class="inline-drawer-content">
-        <!-- 总开关（卡片装 toggle） -->
+
+        <!-- 入口卡片：总开关 + 打开面板按钮 -->
         <div class="sb-entry-card">
             <div class="sb-switch-row">
                 <b><i class="fa-solid fa-power-off"></i> 启用状态栏</b>
@@ -14,98 +15,136 @@
                     <span class="sb-switch-slider"></span>
                 </label>
             </div>
+            <button type="button" class="menu_button sb-open-panel" id="sb_open_panel">
+                <i class="fa-solid fa-sliders"></i> 打开状态栏面板
+            </button>
         </div>
 
-        <!-- 设置主体（启用后亮起） -->
-        <div id="sb_settings_body" style="margin-top:8px;">
+        <!-- 说明 -->
+        <div class="sb-tip">
+            <i class="fa-solid fa-lightbulb"></i>
+            <div>
+                <b>工作原理：</b>启用后，AI 每次回复会在末尾自动生成可折叠状态栏，每个在场角色一个、用户角色一个。状态栏内容是「隐形的 UI 元素」，不影响正文叙事。
+                <br><b>位置：</b>正文结束后、生图图片前。流式生成时内容默认隐藏（折叠态），点开才看到。
+            </div>
+        </div>
 
-            <!-- 主题定制区 -->
-            <div class="sb-panel-card">
-                <div class="sb-card-head">
-                    <i class="fa-solid fa-palette"></i>
-                    <b>主题定制</b>
-                    <div class="sb-card-chev fa-solid fa-chevron-down"></div>
-                </div>
-                <div class="sb-card-body">
-                    <div class="sb-field-label">主色（边框 / 文字 / 分隔线统一派生）</div>
-                    <div class="sb-swatches">
-                        <div class="sb-swatch" data-hex="#ff6b9d" style="background:#ff6b9d" title="默认粉 #ff6b9d"></div>
-                        <div class="sb-swatch" data-hex="#3a4a5c" style="background:#3a4a5c" title="青黛"></div>
-                        <div class="sb-swatch" data-hex="#5c7a6a" style="background:#5c7a6a" title="竹青"></div>
-                        <div class="sb-swatch" data-hex="#b8860b" style="background:#b8860b" title="鎏金"></div>
-                        <div class="sb-swatch" data-hex="#b47a9e" style="background:#b47a9e" title="藕荷"></div>
-                        <div class="sb-swatch" data-hex="#a0392c" style="background:#a0392c" title="朱砂"></div>
-                        <div class="sb-swatch" data-hex="#4a90d9" style="background:#4a90d9" title="天青"></div>
-                    </div>
-                    <div class="sb-custom-row">
-                        <input type="color" id="sb_color_custom" value="#ff6b9d">
-                        <span>自定义</span>
-                        <code id="sb_hex_label">#ff6b9d</code>
-                    </div>
-                    <div class="sb-field-label" style="margin-top:10px;">边框样式</div>
-                    <div class="sb-style-row">
-                        <button type="button" class="sb-style-btn" data-style="solid">实线</button>
-                        <button type="button" class="sb-style-btn" data-style="dashed">虚线</button>
-                        <button type="button" class="sb-style-btn" data-style="dotted">点线</button>
-                    </div>
-                    <div class="sb-range-row">
-                        <label>粗细</label>
-                        <input type="range" id="sb_border_width" min="1" max="4" step="1" value="1">
-                        <span class="sb-val" id="sb_border_width_val">1px</span>
-                    </div>
-                    <div class="sb-range-row">
-                        <label>圆角</label>
-                        <input type="range" id="sb_border_radius" min="4" max="24" step="1" value="12">
-                        <span class="sb-val" id="sb_border_radius_val">12px</span>
-                    </div>
-                    <button type="button" class="menu_button sb-theme-reset" id="sb_theme_reset" style="width:100%;margin-top:4px;">
-                        <i class="fa-solid fa-rotate-left"></i> 恢复默认（粉 · 实线 · 1px · 12px）
-                    </button>
+    </div>
+</div>
+
+<!-- ============ 弹窗（渲染后由 JS 移到 body，避免受侧栏 transform 影响） ============ -->
+<div class="sb-modal-mask" id="sb_modal_mask">
+    <div class="sb-modal">
+        <div class="sb-modal-head">
+            <i class="fa-solid fa-table-columns"></i>
+            <b>状态栏面板</b>
+            <button type="button" class="sb-modal-close" id="sb_modal_close" title="关闭">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="sb-tabs">
+            <button type="button" class="sb-tab active" data-tab="character">
+                <i class="fa-solid fa-user-group"></i> 角色
+            </button>
+            <button type="button" class="sb-tab" data-tab="user">
+                <i class="fa-solid fa-user"></i> 用户
+            </button>
+            <button type="button" class="sb-tab" data-tab="theme">
+                <i class="fa-solid fa-palette"></i> 主题
+            </button>
+        </div>
+
+        <div class="sb-tab-body" id="sb_settings_body">
+
+            <!-- ---------- 角色 Tab ---------- -->
+            <div class="sb-pane active" data-pane="character">
+                <div class="sb-field-label">折叠栏标题模板（<code>{{name}}</code>=名字 <code>{{age}}</code>=年龄）</div>
+                <input type="text" id="sb_char_title" class="sb-text-input" value="" placeholder="{{name}} · {{age}}">
+
+                <div class="sb-field-label" style="margin-top:12px;">状态条目（可增删 / 排序 / 写规则）</div>
+                <div id="sb_items_character" class="sb-items-box"></div>
+                <button type="button" class="menu_button sb-item-add" data-side="character" style="width:100%;margin-top:6px;">
+                    <i class="fa-solid fa-plus"></i> 添加条目
+                </button>
+
+                <div class="sb-live-preview">
+                    <div class="sb-lp-label"><i class="fa-solid fa-eye"></i> 实时预览（聊天里长这样）</div>
+                    <details class="sb-lp-card" open>
+                        <summary id="sb_preview_title_character">角色</summary>
+                        <div class="sb-lp-content" id="sb_preview_content_character"></div>
+                    </details>
                 </div>
             </div>
 
-            <!-- 角色状态栏模板 -->
-            <div class="sb-panel-card">
-                <div class="sb-card-head">
-                    <i class="fa-solid fa-user-group"></i>
-                    <b>角色状态栏</b>
-                    <div class="sb-card-chev fa-solid fa-chevron-down"></div>
-                </div>
-                <div class="sb-card-body">
-                    <div class="sb-field-label">折叠栏标题模板（<code>{{name}}</code>=名字 <code>{{age}}</code>=年龄）</div>
-                    <input type="text" id="sb_char_title" class="sb-text-input" value="{{name}} · {{age}}" placeholder="{{name}} · {{age}}">
-                    <div class="sb-field-label" style="margin-top:10px;">状态条目（可增删 / 排序 / 写规则）</div>
-                    <div id="sb_items_character" class="sb-items-box"></div>
-                    <button type="button" class="menu_button sb-item-add" data-side="character" style="width:100%;margin-top:6px;">
-                        <i class="fa-solid fa-plus"></i> 添加条目
-                    </button>
+            <!-- ---------- 用户 Tab ---------- -->
+            <div class="sb-pane" data-pane="user">
+                <div class="sb-field-label">折叠栏标题模板</div>
+                <input type="text" id="sb_user_title" class="sb-text-input" value="" placeholder="{{name}} · {{age}}">
+
+                <div class="sb-field-label" style="margin-top:12px;">状态条目（可增删 / 排序 / 写规则）</div>
+                <div id="sb_items_user" class="sb-items-box"></div>
+                <button type="button" class="menu_button sb-item-add" data-side="user" style="width:100%;margin-top:6px;">
+                    <i class="fa-solid fa-plus"></i> 添加条目
+                </button>
+
+                <div class="sb-live-preview">
+                    <div class="sb-lp-label"><i class="fa-solid fa-eye"></i> 实时预览（聊天里长这样）</div>
+                    <details class="sb-lp-card" open>
+                        <summary id="sb_preview_title_user">用户</summary>
+                        <div class="sb-lp-content" id="sb_preview_content_user"></div>
+                    </details>
                 </div>
             </div>
 
-            <!-- 用户状态栏模板 -->
-            <div class="sb-panel-card">
-                <div class="sb-card-head">
-                    <i class="fa-solid fa-user"></i>
-                    <b>用户状态栏（我扮演的角色）</b>
-                    <div class="sb-card-chev fa-solid fa-chevron-down"></div>
+            <!-- ---------- 主题 Tab ---------- -->
+            <div class="sb-pane" data-pane="theme">
+                <div class="sb-field-label">主色（边框 / 文字 / 分隔线统一派生）</div>
+                <div class="sb-swatches">
+                    <div class="sb-swatch" data-hex="#ff6b9d" style="background:#ff6b9d" title="默认粉 #ff6b9d"></div>
+                    <div class="sb-swatch" data-hex="#3a4a5c" style="background:#3a4a5c" title="青黛"></div>
+                    <div class="sb-swatch" data-hex="#5c7a6a" style="background:#5c7a6a" title="竹青"></div>
+                    <div class="sb-swatch" data-hex="#b8860b" style="background:#b8860b" title="鎏金"></div>
+                    <div class="sb-swatch" data-hex="#b47a9e" style="background:#b47a9e" title="藕荷"></div>
+                    <div class="sb-swatch" data-hex="#a0392c" style="background:#a0392c" title="朱砂"></div>
+                    <div class="sb-swatch" data-hex="#4a90d9" style="background:#4a90d9" title="天青"></div>
                 </div>
-                <div class="sb-card-body">
-                    <div class="sb-field-label">折叠栏标题模板</div>
-                    <input type="text" id="sb_user_title" class="sb-text-input" value="{{name}} · {{age}}" placeholder="{{name}} · {{age}}">
-                    <div class="sb-field-label" style="margin-top:10px;">状态条目</div>
-                    <div id="sb_items_user" class="sb-items-box"></div>
-                    <button type="button" class="menu_button sb-item-add" data-side="user" style="width:100%;margin-top:6px;">
-                        <i class="fa-solid fa-plus"></i> 添加条目
-                    </button>
+                <div class="sb-custom-row">
+                    <input type="color" id="sb_color_custom" value="#ff6b9d">
+                    <span>自定义</span>
+                    <code id="sb_hex_label">#ff6b9d</code>
                 </div>
-            </div>
 
-            <!-- 说明 -->
-            <div class="sb-tip">
-                <i class="fa-solid fa-lightbulb"></i>
-                <div>
-                    <b>工作原理：</b>启用后，AI 每次回复会在末尾自动生成可折叠状态栏（&lt;details&gt; 原生折叠），每个在场角色一个、用户角色一个。状态栏内容是「隐形的 UI 元素」，不影响正文叙事。
-                    <br><b>位置：</b>正文结束后、生图图片前。流式生成时内容默认隐藏（折叠态），点开才看到。
+                <div class="sb-field-label" style="margin-top:12px;">边框样式</div>
+                <div class="sb-style-row">
+                    <button type="button" class="sb-style-btn" data-style="solid">实线</button>
+                    <button type="button" class="sb-style-btn" data-style="dashed">虚线</button>
+                    <button type="button" class="sb-style-btn" data-style="dotted">点线</button>
+                </div>
+
+                <div class="sb-range-row" style="margin-top:12px;">
+                    <label>粗细</label>
+                    <input type="range" id="sb_border_width" min="1" max="4" step="1" value="1">
+                    <span class="sb-val" id="sb_border_width_val">1px</span>
+                </div>
+                <div class="sb-range-row">
+                    <label>圆角</label>
+                    <input type="range" id="sb_border_radius" min="4" max="24" step="1" value="12">
+                    <span class="sb-val" id="sb_border_radius_val">12px</span>
+                </div>
+
+                <button type="button" class="menu_button sb-theme-reset" id="sb_theme_reset" style="width:100%;margin-top:8px;">
+                    <i class="fa-solid fa-rotate-left"></i> 恢复默认（粉 · 实线 · 1px · 12px）
+                </button>
+
+                <div class="sb-live-preview">
+                    <div class="sb-lp-label"><i class="fa-solid fa-eye"></i> 样式预览</div>
+                    <details class="sb-lp-card" open>
+                        <summary>林雪 · 18</summary>
+                        <div class="sb-lp-content" id="sb_preview_theme">地点: 后院凉亭
+情绪: 忐忑
+穿着: 月白襦裙</div>
+                    </details>
                 </div>
             </div>
 
