@@ -473,10 +473,10 @@ function openAddItemDialog(side) {
     $('#sb_add_name').val('');
     $('#sb_add_rule').val('');
     $('#sb_add_save').prop('disabled', true);
-    $('#sb_add_item_mask').addClass('show');
+    $('#sb_add_item_mask').addClass('sb-modal-open');
     setTimeout(() => { $('#sb_add_name').trigger('focus'); }, 30);
 }
-function closeAddItemDialog() { $('#sb_add_item_mask').removeClass('show'); }
+function closeAddItemDialog() { $('#sb_add_item_mask').removeClass('sb-modal-open'); }
 
 
 // ---------- 事件绑定 ----------

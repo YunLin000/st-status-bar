@@ -250,12 +250,11 @@
 .sb-custom-theme.disabled { opacity: .4; pointer-events: none; }
 
 /* --- v2.3 添加条目弹窗 --- */
-.sb-add-mask { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; z-index: 3000; padding: 16px; }
-.sb-add-mask.show { display: flex; }
 .sb-add-dialog { width: 92vw; max-width: 400px; background: var(--SmartThemeBlurTintColor,#262e3d); border: 1px solid var(--SmartThemeBorderColor,#3e4a5e); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
 .sb-add-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 .sb-add-field { display: flex; flex-direction: column; gap: 5px; }
 .sb-add-field label { font-size: 12px; color: var(--SmartThemeBodyColor,#ccc); opacity: .8; }
 .sb-add-hint { font-size: 11px; color: var(--SmartThemeBodyColor,#888); opacity: .7; }
+#sb_add_rule { min-height: 68px; resize: vertical; }
 .sb-add-foot { display: flex; gap: 8px; justify-content: flex-end; margin-top: 2px; }
 #sb_add_save:disabled { opacity: .5; cursor: not-allowed; filter: none; }
