@@ -382,7 +382,6 @@ function refreshAllUI() {
     $('#sb_user_title').val(s.user.titleTemplate);
     renderItemList('character', s.character.items);
     renderItemList('user', s.user.items);
-    $('#sb_settings_body').toggleClass('sb-disabled', !s.enabled);
 }
 
 function renderItemList(side, items) {

@@ -140,8 +140,7 @@
 .sb-tip i { color: var(--st-sb-light, #ff9ec4); margin-top: 2px; }
 .sb-tip b { color: var(--st-sb-light, #ff9ec4); }
 
-/* --- 启用灰化 --- */
-#sb_settings_body.sb-disabled { opacity: .45; pointer-events: none; }
+/* --- （v2.1.1 移除整体禁点：弹窗内容始终可配置，启用开关在面板内可随时开） --- */
 
 /* ============================================================
    v2.1 弹窗面板（入口按钮 / 遮罩 / Tab / 实时预览）
